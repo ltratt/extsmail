@@ -1,0 +1,16 @@
+*.o
+Config.h
+Config.h.in
+Makefile
+autom4te.cache/
+conf_parser.tab.c
+conf_parser.tab.h
+conf_tokenizer.c
+config.log
+config.status
+configure
+externals_parser.tab.c
+externals_parser.tab.h
+externals_tokenizer.c
+extsmail
+extsmaild
