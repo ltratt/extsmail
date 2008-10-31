@@ -257,22 +257,22 @@ bool cycle(Conf *conf, Group *groups)
     }
     
     int all_sent = true;
-	while (1) {
+    while (1) {
         errno = 0;
-		struct dirent *dp = readdir(dirp);
-		if (dp == NULL) {
-			if (errno == 0) {
+        struct dirent *dp = readdir(dirp);
+        if (dp == NULL) {
+            if (errno == 0) {
                 // We've read all the directory entries.
-				break;
+                break;
             }
-			else
+            else
                 syslog(LOG_ERR, "When scanning spool dir: %m");
-		}
+        }
 
         // The entries "." and ".." are, fairly obviously, not messages.
 
-		if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0)
-			continue;
+        if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0)
+            continue;
 
         char *msg_path;
         if (asprintf(&msg_path, "%s%s%s%s%s", conf->spool_dir, DIR_SEP,
@@ -336,9 +336,9 @@ bool cycle(Conf *conf, Group *groups)
         }
         
         free(msg_path);
-	}
+    }
 
-	closedir(dirp);
+    closedir(dirp);
     free(msgs_path);
 
     return all_sent;
@@ -549,11 +549,11 @@ next_group:
         if (pipe(pipeto) == -1 || pipe(pipefrom) == -1)
             err(1, "Can't open pipes");
 
-	    pid_t pid = fork();
-	    if (pid == -1)
-		    err(1, "Can't fork");
-	    else if (pid == 0) {
-		    // Child / sendmail process.
+        pid_t pid = fork();
+        if (pid == -1)
+            err(1, "Can't fork");
+        else if (pid == 0) {
+            // Child / sendmail process.
 
             close(STDOUT_FILENO);
             if (dup2(pipeto[0], STDIN_FILENO) == -1 || dup2(pipefrom[1],
@@ -664,15 +664,15 @@ next_group:
             // retry the message send later.
 
             int status;
-	        if (waitpid(pid, &status, 0) || WIFEXITED(status)) {
-		        int child_rtn = WEXITSTATUS(status);
-		        if (child_rtn != 0) {
-			        syslog(LOG_ERR, "Received error %d when executing "
+            if (waitpid(pid, &status, 0) || WIFEXITED(status)) {
+                int child_rtn = WEXITSTATUS(status);
+                if (child_rtn != 0) {
+                    syslog(LOG_ERR, "Received error %d when executing "
                       "'%s' on '%s': %.*s", child_rtn, cur_ext->sendmail,
                       msg_path, stderr_buf_len, stderr_buf);
                     goto next;
                 }
-	        }
+            }
             else {
                 goto next;
             }

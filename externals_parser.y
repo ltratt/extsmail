@@ -67,10 +67,10 @@ Match *add_match(Match_Type, const char *);
 
 
 start : groups
-		{
-        	groups = $<group>1;
+        {
+            groups = $<group>1;
         }
-	;
+    ;
 
 groups : groups group
         {
@@ -78,28 +78,28 @@ groups : groups group
 
             $<group>$ = $<group>1;
         }
-	| group
+    | group
     ;
 
 group : TGROUP TLCB matches externals TRCB
-		{
-        	Group *group = malloc(sizeof(Group));
-          	group->matches = $<match>3;
+        {
+            Group *group = malloc(sizeof(Group));
+              group->matches = $<match>3;
             group->externals = $<external>4;
             group->next = NULL;
             
             $<group>$ = group;
         }
-	| TGROUP TLCB externals TRCB
-		{
-        	Group *group = malloc(sizeof(Group));
-          	group->matches = NULL;
+    | TGROUP TLCB externals TRCB
+        {
+            Group *group = malloc(sizeof(Group));
+              group->matches = NULL;
             group->externals = $<external>3;
             group->next = NULL;
             
             $<group>$ = group;
         }
-	;
+    ;
 
 matches : matches mr
         {
@@ -107,27 +107,27 @@ matches : matches mr
 
             $<match>$ = $<match>1;
         }
-	| mr
+    | mr
     ;
 
 mr : match
-	| reject
-	;
+    | reject
+    ;
 
 match : TMATCH THEADER TSTRING
-		{
-        	Match *m = add_match(MATCH, $<str>3);
+        {
+            Match *m = add_match(MATCH, $<str>3);
             if (m == NULL)
-            	YYABORT;
+                YYABORT;
             $<match>$ = m;
         }
     ;
 
 reject : TREJECT THEADER TSTRING
-		{
-        	Match *m = add_match(REJECT, $<str>3);
+        {
+            Match *m = add_match(REJECT, $<str>3);
             if (m == NULL)
-            	YYABORT;
+                YYABORT;
             $<match>$ = m;
         }
     ;
@@ -150,9 +150,9 @@ external : TEXTERNAL TID
             _wk_external->name = $<str>2;
             _wk_external->sendmail = NULL;
         }
-	TLCB defns TRCB
+    TLCB defns TRCB
         {    
-        	_wk_external->next = NULL;
+            _wk_external->next = NULL;
         
             $<external>$ = _wk_external;
         }
@@ -164,30 +164,30 @@ defns : defns defn
 
 defn  : TID TASSIGN TSTRING
         {
-	        if (strcmp($<str>1, "sendmail") == 0) {
-    	        if (_wk_external->sendmail != NULL) {
-	    	        warnx("Multiple definitions of 'sendmail' in '%s'",
+            if (strcmp($<str>1, "sendmail") == 0) {
+                if (_wk_external->sendmail != NULL) {
+                    warnx("Multiple definitions of 'sendmail' in '%s'",
                       _wk_external->name);
-    	            YYABORT;
+                    YYABORT;
                 }
 
-#			define IS_WHITESPACE(x) ($<str>3[i] == ' ' || $<str>3[i] == '\t' \
-       		 || $<str>3[i] == '\n')
+#            define IS_WHITESPACE(x) ($<str>3[i] == ' ' || $<str>3[i] == '\t' \
+                || $<str>3[i] == '\n')
 
-				int nargv = 0; // Number of arguments
+                int nargv = 0; // Number of arguments
                 int nargv_alloced = 16;
                 char **argv = malloc(sizeof(char *) * nargv_alloced);
                 if (argv == NULL)
-                	errx(1, "Unable to allocate memory");
+                    errx(1, "Unable to allocate memory");
                 
                 int len = strlen($<str>3);
                 for (int i = 0; i < len; i++) {
-                	// Skip whitespace at beginning of arg
-                	while (i < len && IS_WHITESPACE(i))
+                    // Skip whitespace at beginning of arg
+                    while (i < len && IS_WHITESPACE(i))
                         i += 1;
                     
                     if (i == len)
-                    	break;
+                        break;
                     
                     // Identify an argument. This is nominally a string of non
                     // whitespace characters - unless it's within quotes, when
@@ -195,7 +195,7 @@ defn  : TID TASSIGN TSTRING
 
                     int start, end;
                     if ($<str>3[i] == '\'') {
-                    	start = i + 1;
+                        start = i + 1;
                         i += 1;
                         while (i < len) {
                             if ($<str>3[i] == '\\')
@@ -207,12 +207,12 @@ defn  : TID TASSIGN TSTRING
                         }
                         
                         if (i == len)
-                        	end = i;
+                            end = i;
                         else
-	                        end = i - 1;
+                            end = i - 1;
                     }
                     else if ($<str>3[i] == '"') {
-                    	start = i + 1;
+                        start = i + 1;
                         i += 1;
                         while (i < len) {
                             if ($<str>3[i] == '\\')
@@ -224,13 +224,13 @@ defn  : TID TASSIGN TSTRING
                         }
                         
                         if (i == len)
-                        	end = i;
+                            end = i;
                         else
-	                        end = i - 1;
+                            end = i - 1;
                     }
                     else {
-                    	start = i;
-                	    while (i < len && ! IS_WHITESPACE(i))
+                        start = i;
+                        while (i < len && ! IS_WHITESPACE(i))
                             i += 1;
                         end = i;
                     }
@@ -239,10 +239,10 @@ defn  : TID TASSIGN TSTRING
                     arg[i - start] = 0;
                     
                     if (nargv == nargv_alloced) {
-                    	nargv_alloced *= 2;
+                        nargv_alloced *= 2;
                         argv = malloc(sizeof(char *) * nargv_alloced);
                         if (argv == NULL)
-                	        errx(1, "Unable to allocate memory");
+                            errx(1, "Unable to allocate memory");
                     }
                     argv[nargv++] = arg;
                 }
@@ -251,7 +251,7 @@ defn  : TID TASSIGN TSTRING
                 _wk_external->sendmail_nargv = nargv;
             }
             else {
-    	        warnx("Unknown externals var '%s'", $<str>1);
+                warnx("Unknown externals var '%s'", $<str>1);
                 YYABORT;
             }
         }

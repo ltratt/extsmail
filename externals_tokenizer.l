@@ -38,7 +38,7 @@ char *mk_str(char *);
 %%
 
 
-\/\/.*$ {	}
+\/\/.*$ {    }
 
 [ \t\n]+ { }
 
@@ -56,13 +56,13 @@ char *mk_str(char *);
         return TID;
     }
 
-\"	{
-		size_t len = 128;
+\"    {
+        size_t len = 128;
         int i = 0;
         char *buf = malloc(len);
         int c;
-    	while ((c = input()) != 0) {
-        	if (c == '"') {
+        while ((c = input()) != 0) {
+            if (c == '"') {
                 break;
             }
             
@@ -70,44 +70,44 @@ char *mk_str(char *);
             // terminate the string later.
             
             if (i + 1 == len) {
-            	len *= 2;
+                len *= 2;
                 buf = realloc(buf, len);
                 if (buf == NULL)
-                	errx(1, "Out of memory");
+                    errx(1, "Out of memory");
             }
             
             if (c == '\\') {
-            	int c2 = input();
+                int c2 = input();
                 switch (c2) {
-                	case 'n':
-		            	buf[i++] = '\n';
+                    case 'n':
+                        buf[i++] = '\n';
                         break;
-                	case 'r':
-		            	buf[i++] = '\r';
+                    case 'r':
+                        buf[i++] = '\r';
                         break;
-                	case 't':
-		            	buf[i++] = '\t';
+                    case 't':
+                        buf[i++] = '\t';
                         break;
                     default:
-		            	buf[i++] = c2;
+                        buf[i++] = c2;
                         break;
                 }
             }
             else
-            	buf[i++] = c;
+                buf[i++] = c;
         }
 
         buf = realloc(buf, i + 1); // We probably over allocated earlier.
         if (buf == NULL)
-        	errx(1, "Fatal error");
+            errx(1, "Fatal error");
         buf[i] = 0;
         
         yyelval.str = buf;
         return TSTRING;
     }
 
-.	{
-		printf("Illegal char '%s'\n", yytext );
+.    {
+        printf("Illegal char '%s'\n", yytext );
     }
 
 

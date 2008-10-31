@@ -43,13 +43,13 @@ void yycerror(const char *s)
 
 int yycwrap()
 {
-	return 1;
+    return 1;
 }
 %}
 
 
 %union {
-	const char *str;
+    const char *str;
 }
 
 %token TASSIGN
@@ -70,11 +70,11 @@ defns : defns defn
       ;
     
 defn  : TID TASSIGN TSTRING
-			{
-				if (!set_entry($1.str, $3.str))
-        			YYABORT;
-        	}
-	  ;
+            {
+                if (!set_entry($1.str, $3.str))
+                    YYABORT;
+            }
+      ;
 
 
 
@@ -82,18 +82,18 @@ defn  : TID TASSIGN TSTRING
 
 bool set_entry(const char *id, const char *val)
 {
-	if (strcmp(id, "spool_dir") == 0) {
-    	if (conf->spool_dir != NULL) {
-	    	warnx("Multiple definitions of '%s'", id);
-    	    return false;
+    if (strcmp(id, "spool_dir") == 0) {
+        if (conf->spool_dir != NULL) {
+            warnx("Multiple definitions of '%s'", id);
+            return false;
         }
         
         conf->spool_dir = expand_path(val);
         if (conf->spool_dir == NULL)
-        	return false;
+            return false;
     }
     else {
-    	warnx("Unknown conf var '%s'", id);
+        warnx("Unknown conf var '%s'", id);
         return false;
     }
     
