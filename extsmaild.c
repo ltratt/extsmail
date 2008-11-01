@@ -228,7 +228,13 @@ int try_externals_path(const char *path)
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// The main message sending cycle
 //
+
+//
+// Try sending any messages in the spool dir. Returns true if all messages were
+// sent successfully (or if there were no messages to send), or false if at least
+// one message failed to be succesfully sent.
 //
 
 bool cycle(Conf *conf, Group *groups)
@@ -291,7 +297,7 @@ bool cycle(Conf *conf, Group *groups)
                 break;
             }
             else {
-                // We've now got an exclusive lock on the file
+                // We've now got an exclusive lock on the file.
                 struct stat msg_st;
                 if (fstat(fd, &msg_st) == -1) {
                     // If stat failed then something odd has happened and it's
@@ -324,10 +330,10 @@ bool cycle(Conf *conf, Group *groups)
                 close(fd);
             }
             
-            // At this point, we'd gained an exclusive lock before any data had
-            // been written to the file. Assuming we haven't tried this too many
-            // times, we now try sleeping for a second and then having another
-            // go.
+            // At this point, we've released the exclusive lock we'd previously
+            // gained, because we'd gained it before any data had been written to
+            // the spool file. Assuming we haven't tried this too many times, we
+            // now try sleeping for a second and then having another go.
             
             tries -= 1;
             if (tries < 0) {
@@ -347,6 +353,11 @@ bool cycle(Conf *conf, Group *groups)
 }
 
 
+
+//
+// Try sending an individual message. Returns true if successful, false
+// otherwise.
+//
 
 bool try_groups(Conf *conf, Group *groups, const char *msg_path, int fd)
 {
@@ -655,7 +666,9 @@ next_group:
                 }
             }
 
-            // Chomp any newline chars at the end of the stderr buf.
+            // For reasons that I don't pretend to understand, stderr messages
+            // sometimes have random newline chars at the end of line - this loop
+            // chomps them off.
             while (stderr_buf_len > 0 && (stderr_buf[stderr_buf_len - 1] == '\n'
               || stderr_buf[stderr_buf_len - 1] == '\r'))
                 stderr_buf_len -= 1;
@@ -766,6 +779,12 @@ int main(int argc, char** argv)
         daemon(1, 0);
 
 #ifdef HAVE_KQUEUE
+        // On BSD, we use kqueue to monitor spool_dir/msgs so that if we're a
+        // daemon then, as soon as someone starts fiddling with it (i.e. extsmail
+        // putting a new message in there) we try to send all messages. This
+        // gives the nice illusion that message sending with extsmail is pretty
+        // much instant.
+
         int kq = kqueue();
         if (kq == -1)
            errx(1, "kqueue");
@@ -794,9 +813,14 @@ int main(int argc, char** argv)
         while (1) {
             cycle(conf, groups);
 #ifdef HAVE_KQUEUE
+            // On BSD we use kqueue to watch spool_dir/msgs but we also try,
+            // every POLL_WAIT, seconds to try sending messages as well. This
+            // is in case the network goes up and down - we can't just wait
+            // until the user tries sending messages.
             struct timespec timeout = {POLL_WAIT, 0};
             kevent(kq, &changes, 1, &events, 1, &timeout);
 #else
+            // If no other support is available, we fall back on polling alone.
             sleep(POLL_WAIT);
 #endif
         }
