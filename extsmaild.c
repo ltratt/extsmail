@@ -385,7 +385,7 @@ bool try_groups(Conf *conf, Group *groups, const char *msg_path, int fd)
         if (arg == NULL)
             errx(1, "Unable to allocate memory");
 
-        int nr = read(fd, arg, sa + 1);
+        ssize_t nr = read(fd, arg, sa + 1);
         if (nr < sa + 1) { // Note this also captures nr == 0 and nr == -1
             for (int j = 0; j < i; j += 1)
                 free(argv[j]);
@@ -603,7 +603,7 @@ next_group:
                 }
             
                 if (fds[POLL_FD].revents & POLLIN) {
-                    int nr = read(fd, buf, PTOC_BUFLEN);
+                    ssize_t nr = read(fd, buf, PTOC_BUFLEN);
                     if (nr == 0) {
                         // It might look like we'd like to close(fd) now, but
                         // it's still possible for things to go wrong and fd
@@ -632,7 +632,7 @@ next_group:
                 }
 
                 if (fds[POLL_PIPEFROM].revents & POLLIN || eof_fd) {
-                    int nr = read(pipefrom[0], stderr_buf + stderr_buf_len, 
+                    ssize_t nr = read(pipefrom[0], stderr_buf + stderr_buf_len, 
                       stderr_buf_alloc - stderr_buf_len);
                     if (nr == -1) {
                         syslog(LOG_ERR, "When reading stderr from '%s': %m",
@@ -643,7 +643,7 @@ next_group:
                         close(pipefrom[0]);
                         eof_stderr = true;
                     }
-                    else if (nr == stderr_buf_alloc - stderr_buf_len) {
+                    else if ((size_t) nr == stderr_buf_alloc - stderr_buf_len) {
                         stderr_buf_alloc += STDERR_BUF_ALLOC;
                         stderr_buf = realloc(stderr_buf, stderr_buf_alloc);
                         if (stderr_buf == NULL)
