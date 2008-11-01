@@ -73,10 +73,6 @@ int try_externals_path(const char *);
 bool cycle(Conf *conf, Group *groups);
 bool try_groups(Conf *, Group *, const char *, int);
 
-Group *groups;
-extern int yyeparse(void);
-FILE *yyein;
-
 
 
 
@@ -161,21 +157,27 @@ void sigterm_trap(int sigraised)
 // Configuration file related
 //
 
+Group *groups;
+extern int yyeparse(void);
+FILE *yyein;
+
+//
+// Read the externals file in.
+//
+// This function does not return if there is a problem.
+//
+
 Group *read_externals(void)
 {
-    int i;
-    for (i = 0; EXTERNALS_PATHS[i] != NULL; i += 1) {
+    for (int i = 0; EXTERNALS_PATHS[i] != NULL; i += 1) {
         int rtn = try_externals_path(EXTERNALS_PATHS[i]);
         if (rtn == 0)
-            break;
+            return groups;
         else if (rtn == -1)
             exit(1);
     }
 
-    if (EXTERNALS_PATHS[i] == NULL)
-        errx(1, "Can't find a valid externals file");
-
-    return groups;
+    err(1, "Can't find a valid externals file");
 }
 
 
