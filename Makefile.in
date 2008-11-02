@@ -9,8 +9,6 @@ LIBS=@LIBS@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
-datarootdir = @datarootdir@
-mandir = @mandir@
 INSTALL = @INSTALL@
 
 
@@ -51,8 +49,11 @@ install: extsmail extsmaild
 	install -d ${DESTDIR}${bindir}
 	install -c -m 555 extsmail ${DESTDIR}${bindir}
 	install -c -m 555 extsmaild ${DESTDIR}${bindir}
-	install -c -m 444 extsmail.cat1 ${DESTDIR}${mandir}/cat1/extsmail.0
-	install -c -m 444 extsmail.cat1 ${DESTDIR}${mandir}/cat1/extsmaild.0
+	install -d ${DESTDIR}${prefix}/man/cat1
+	install -c -m 444 extsmail.cat1 ${DESTDIR}${prefix}/man/cat1/extsmail.0
+	install -c -m 444 extsmail.cat1 ${DESTDIR}${prefix}/man/cat1/extsmail.conf.0
+	install -c -m 444 extsmail.cat1 ${DESTDIR}${prefix}/man/cat1/extsmail.externals.0
+	install -c -m 444 extsmail.cat1 ${DESTDIR}${prefix}/man/cat1/extsmaild.0
 
 
 clean:
