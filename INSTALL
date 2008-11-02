@@ -1,0 +1,13 @@
+================================================================================
+  extsmail installation
+================================================================================
+
+extsmail follows the standard UNIX installation sequence:
+
+  $ ./configure
+  $ make
+  $ make install
+
+Please note that if, and only if, you are building from the git repository you
+will first need to execute make -f Makefile.bootstrap to build the configure
+script.
