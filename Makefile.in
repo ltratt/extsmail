@@ -1,13 +1,21 @@
+.SUFFIXES: .cat1 .1
+
+.1.cat1:
+	nroff -mandoc $< > $@
+
 CC=@CC@
 CFLAGS=@CFLAGS@
 LIBS=@LIBS@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
+datarootdir = @datarootdir@
+mandir = @mandir@
 INSTALL = @INSTALL@
 
 
-all: extsmail extsmaild
+all: extsmail extsmaild extsmail.cat1 extsmail.conf.cat1 \
+       extsmail.externals.cat1 extsmaild.cat1
 
 
 EXTSMAIL_OBJS = conf_parser.tab.o conf_tokenizer.o extsmail.o common.o
@@ -43,6 +51,8 @@ install: extsmail extsmaild
 	install -d ${DESTDIR}${bindir}
 	install -c -m 555 extsmail ${DESTDIR}${bindir}
 	install -c -m 555 extsmaild ${DESTDIR}${bindir}
+	install -c -m 444 extsmail.cat1 ${DESTDIR}${mandir}/cat1/extsmail.0
+	install -c -m 444 extsmail.cat1 ${DESTDIR}${mandir}/cat1/extsmaild.0
 
 
 clean:
@@ -52,4 +62,4 @@ clean:
 
 distclean: clean
 	rm -rf configure Makefile Config.h Config.h.in autom4te.cache config.log \
-      config.status
+      config.status extsmail.cat1 extsmaild.cat1

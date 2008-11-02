@@ -1,0 +1,63 @@
+.\" Copyright (C)2008 Laurence Tratt http://tratt.net/laurie/
+.\"
+.\" Permission is hereby granted, free of charge, to any person obtaining a copy
+.\" of this software and associated documentation files (the "Software"), to
+.\" deal in the Software without restriction, including without limitation the
+.\" rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+.\" sell copies of the Software, and to permit persons to whom the Software is
+.\" furnished to do so, subject to the following conditions:
+.\"
+.\" The above copyright notice and this permission notice shall be included in
+.\" all copies or substantial portions of the Software.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+.\" IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+.\" FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+.\" AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+.\" LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+.\" FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+.\" IN THE SOFTWARE.
+.Dd $Mdocdate: November 2 2008 $
+.Dt EXTSMAIL.CONF 1
+.Os
+.Sh NAME
+.Nm extsmail.conf
+.Nd configure robust sending of e-mail to external commands
+.Sh DESCRIPTION
+.Nm
+is used to configure
+.Xr extsmail 1
+and
+.Xr extsmaild 1 .
+It consists of one or more 
+.Em key = value
+pairs. The following variables are defined:
+.Bl -tag -width Ds
+.It spool_dir
+Sets the location of the spool directory used by
+.Xr extsmail 1
+and
+.Xr extsmaild 1 .
+.El
+.Sh FILES
+The
+.Em extsmail
+configuration file is searched for, in order, in the following locations:
+.Pp
+.Bl -tag -width Ds -compact
+.It ~/.extsmail/conf
+Per-user
+.Em extsmail
+configuration.
+.Pp
+.It /etc/extsmail/conf
+System-wide
+.Em extsmail
+configuration.
+.El
+.Sh SEE ALSO
+.Xr extsmail 1 ,
+.Xr extsmail.externals 5 ,
+.Xr extsmaild 1
+.Sh AUTHORS
+.An Laurence Tratt Aq http://tratt.net/laurie/

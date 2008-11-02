@@ -1,0 +1,56 @@
+.\" Copyright (C)2008 Laurence Tratt http://tratt.net/laurie/
+.\"
+.\" Permission is hereby granted, free of charge, to any person obtaining a copy
+.\" of this software and associated documentation files (the "Software"), to
+.\" deal in the Software without restriction, including without limitation the
+.\" rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+.\" sell copies of the Software, and to permit persons to whom the Software is
+.\" furnished to do so, subject to the following conditions:
+.\"
+.\" The above copyright notice and this permission notice shall be included in
+.\" all copies or substantial portions of the Software.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+.\" IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+.\" FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+.\" AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+.\" LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+.\" FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+.\" IN THE SOFTWARE.
+.Dd $Mdocdate: November 2 2008 $
+.Dt EXTSMAIL 1
+.Os
+.Sh NAME
+.Nm extsmaild
+.Nd robust sending of e-mail to external commands
+.Sh SYNOPSIS
+.Nm extsmaild
+.Op Fl d
+.Sh DESCRIPTION
+.Nm
+sends messages spooled by
+.Xr extsmail 1 .
+If called without switches,
+.Nm
+runs as a foreground process and terminates after trying to send all messages; it returns
+.Er 0
+if all messages were sent successfully
+.Er 1
+if any messages remain unsent.
+.Pp
+If called with the
+.Fl d
+switch,
+.Nm
+operates as a long running daemon; it monitors the spool directory and when it notices changes to the directory (or a fixed period has elapsed) it tries to send any unsent messages. This means that even on unreliable networks,
+.Nm
+can easily be left alone and relied upon to ultimately send all messages - without manual intervention.
+.Sh SEE ALSO
+.Xr extsmail.conf 5 ,
+.Xr extsmail.externals 5 ,
+.Xr extsmail 1
+.Sh AUTHORS
+.An -nosplit
+.Nm
+was written by
+.An Laurence Tratt Aq http://tratt.net/laurie/

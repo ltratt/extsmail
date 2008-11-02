@@ -1,0 +1,131 @@
+.\" Copyright (C)2008 Laurence Tratt http://tratt.net/laurie/
+.\"
+.\" Permission is hereby granted, free of charge, to any person obtaining a copy
+.\" of this software and associated documentation files (the "Software"), to
+.\" deal in the Software without restriction, including without limitation the
+.\" rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+.\" sell copies of the Software, and to permit persons to whom the Software is
+.\" furnished to do so, subject to the following conditions:
+.\"
+.\" The above copyright notice and this permission notice shall be included in
+.\" all copies or substantial portions of the Software.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+.\" IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+.\" FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+.\" AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+.\" LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+.\" FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+.\" IN THE SOFTWARE.
+.Dd $Mdocdate: November 2 2008 $
+.Dt EXTSMAIL.EXTERNALS 1
+.Os
+.Sh NAME
+.Nm extsmail.externals
+.Nd configure which external commands to robustly send e-mail via
+.Sh DESCRIPTION
+.Nm
+is used to configure
+.Xr extsmaild 1 .
+It consists of one or more 
+.Em group
+declarations. Each group consists of zero or more
+.Em match
+/
+.Em reject
+clauses followed by one or more
+.Em external
+declarations. An external consists of one or more assignments of
+.Em key = value
+pairs.
+.Pp
+When sending messages
+.Xr extsmaild 1
+first searches through the externals file, in order, for a group whose match /
+reject clauses match the message in question. If a group does not contain any
+such clauses it automatically matches all messages. Match / reject clauses
+currently match only against headers, and use standard POSiX extended regular
+expressions (see
+.Xr re_format 7
+for more details).
+.Xr extsmaild 1
+then tries each external in the group, in order, to send the message
+successfully.
+.Pp
+The grammar for this file is as follows:
+.Bd -literal -offset indent
+group    ::= { matches* external+ }
+
+matches  ::= match
+           | reject
+match    ::= MATCH HEADER string
+reject   ::= REJECT HEADER string
+
+external ::= EXTERNAL ID { defn+ }
+
+defn     ::= ID = STRING
+.Ed
+.Pp
+Valid assignments within an external are:
+.Bl -tag -width Ds
+.It sendmail
+Defines the external shell command used to send e-mail. $PATH
+.El
+.Sh FILES
+The
+.Em extsmail
+configuration file is searched for, in order, in the following locations:
+.Pp
+.Bl -tag -width Ds -compact
+.It ~/.extsmail/externals
+Per-user configuration.
+.Pp
+.It /etc/extsmail/externals
+System-wide configuration.
+.El
+.Sh EXAMPLES
+The simplest externals file sending e-mail via
+.Xr ssh 1
+looks as follows:
+.Bd -literal -offset indent
+group {
+    external mymachine {
+        sendmail = "/usr/bin/ssh -n -q -C -l user mymachine.net /usr/sbin/sendmail"
+    }
+}
+.Ed
+where
+.Em mymachine
+is a human-friendly name given to an external (it does not effect processing),
+and
+.Em user
+is the username on the remote machine
+.Em mymachine.net .
+.Pp
+A more complex example using multiple groups, message matching, and multiple
+external commands looks as follows:
+.Bd -literal -offset indent
+group {
+    match header "^To:.*@foo.com"
+
+    external foo {
+        sendmail = "/usr/bin/ssh -n -q -C -l user shell.foo.com /usr/sbin/sendmail"
+    }
+}
+
+group {
+    external mymachine {
+        sendmail = "/usr/bin/ssh -n -q -C -l user mymachine.net /usr/sbin/sendmail"
+    }
+
+    external bk {
+        sendmail = "/usr/bin/ssh -n -q -C -l user bk.mymachine.net /usr/sbin/sendmail"
+    }
+}
+.Ed
+.Sh SEE ALSO
+.Xr extsmail 1 ,
+.Xr extsmail.conf 5 ,
+.Xr extsmaild 1
+.Sh AUTHORS
+.An Laurence Tratt Aq http://tratt.net/laurie/
