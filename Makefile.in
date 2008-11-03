@@ -45,15 +45,17 @@ externals_tokenizer.c: externals_tokenizer.l
 	lex -Pyye -oexternals_tokenizer.c externals_tokenizer.l
 
 
-install: extsmail extsmaild
+install: all
 	install -d ${DESTDIR}${bindir}
 	install -c -m 555 extsmail ${DESTDIR}${bindir}
 	install -c -m 555 extsmaild ${DESTDIR}${bindir}
 	install -d ${DESTDIR}${prefix}/man/cat1
 	install -c -m 444 extsmail.cat1 ${DESTDIR}${prefix}/man/cat1/extsmail.0
-	install -c -m 444 extsmail.cat1 ${DESTDIR}${prefix}/man/cat1/extsmail.conf.0
-	install -c -m 444 extsmail.cat1 ${DESTDIR}${prefix}/man/cat1/extsmail.externals.0
-	install -c -m 444 extsmail.cat1 ${DESTDIR}${prefix}/man/cat1/extsmaild.0
+	install -c -m 444 extsmail.conf.cat1 \
+      ${DESTDIR}${prefix}/man/cat1/extsmail.conf.0
+	install -c -m 444 extsmail.externals.cat1 \
+      ${DESTDIR}${prefix}/man/cat1/extsmail.externals.0
+	install -c -m 444 extsmaild.cat1 ${DESTDIR}${prefix}/man/cat1/extsmaild.0
 
 
 clean:
@@ -63,4 +65,5 @@ clean:
 
 distclean: clean
 	rm -rf configure Makefile Config.h Config.h.in autom4te.cache config.log \
-      config.status extsmail.cat1 extsmaild.cat1
+      config.status extsmail.cat1 extsmail.conf.cat1 extsmail.externals.cat1 \
+      extsmaild.cat1
