@@ -107,19 +107,21 @@ int main(int argc, char** argv)
 #   define BUF_SIZE 1024
 
     char buf[BUF_SIZE];
+    size_t total_nr = 0; // All bytes read from stdin.
     while (1) {
-        size_t nbr; // Number of bytes read
-        if ((nbr = fread(buf, 1, BUF_SIZE, stdin)) < BUF_SIZE) {
+        size_t nr; // Number of bytes read
+        if ((nr = fread(buf, 1, BUF_SIZE, stdin)) < BUF_SIZE) {
             if (ferror(stdin)) {
                 fprintf(stderr, "%s: Error when reading stdin.", __progname);
                 exit(1);
             }
         }
 
-        if (fwrite(buf, 1, nbr, sf) < nbr) {
+        if (fwrite(buf, 1, nr, sf) < nr) {
             fprintf(stderr, "%s: Error when writing to spool file.", __progname);
             exit(1);
         }
+        total_nr += nr;
         
         if (feof(stdin) != 0)
             break;
@@ -127,6 +129,15 @@ int main(int argc, char** argv)
     
     fflush(sf);
     fclose(sf);
+
+    // If we didn't read any bytes in from stdin, then we remove the spool file
+    // since there's no message to send. This is designed to prevent
+    // annoying-ness when extsmail is incorrectly called and ctrl-D pressed
+    // immediately.
+    
+    if (total_nr == 0)
+        unlink(sp);
+
     flock(sfd, LOCK_UN);
     close(sfd);
     
