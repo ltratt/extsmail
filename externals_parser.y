@@ -254,6 +254,8 @@ defn  : TID TASSIGN TSTRING
                 warnx("Unknown externals var '%s'", $<str>1);
                 YYABORT;
             }
+            
+            free((void *) $<str>1);
         }
     ;
 

@@ -73,6 +73,9 @@ defn  : TID TASSIGN TSTRING
             {
                 if (!set_entry($1.str, $3.str))
                     YYABORT;
+                
+                free((void *) $<str>1);
+                free((void *) $<str>3);
             }
       ;
 
