@@ -262,6 +262,11 @@ char *fdrdline(int fd)
         }
     }
     
+    // If we didn't read in any data, then we hit EOF. The user is expected to
+    // have detected that condition, so we return NULL.
+    if (line == NULL)
+        return NULL;
+    
     line[line_len] = 0;
 
     return line;
