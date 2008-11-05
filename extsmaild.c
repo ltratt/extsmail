@@ -446,8 +446,10 @@ bool try_groups(Conf *conf, Group *groups, const char *msg_path, int fd)
 
         // If we've hit an empty line then we've reached the end of the headers.
 
-        if (line_len == 0)
+        if (line_len == 0) {
+            free(line);
             break;
+        }
 
         while (dhd_buf_len + line_len + 1 > dhb_buf_alloc) {
             dhb_buf_alloc += HEADER_BUF;
@@ -474,6 +476,7 @@ bool try_groups(Conf *conf, Group *groups, const char *msg_path, int fd)
             dhd_buf[dhd_buf_len + line_len] = '\n';
             dhd_buf_len += line_len + 1;
         }
+        free(line);
     }
     dhd_buf[dhd_buf_len - 1] = 0; // Convert the last newline into a NUL
     
