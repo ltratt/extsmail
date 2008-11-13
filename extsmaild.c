@@ -580,16 +580,16 @@ next_group:
             close(pipefrom[0]);
             close(pipefrom[1]);
 
-            char **sub_argv = malloc((nargv + cur_ext->sendmail_nargv) *
+            char **sub_argv = malloc((nargv + cur_ext->sendmail_nargv + 1) *
               sizeof(char *));
             if (sub_argv == NULL)
                 errx(1, "Unable to allocate memory");
 
-            memcpy(sub_argv, cur_ext->sendmail_argv + 1,
-              (cur_ext->sendmail_nargv - 1) * sizeof(char *));
-            memcpy(sub_argv + (cur_ext->sendmail_nargv - 1), argv,
+            memcpy(sub_argv, cur_ext->sendmail_argv,
+              cur_ext->sendmail_nargv * sizeof(char *));
+            memcpy(sub_argv + cur_ext->sendmail_nargv, argv,
               nargv * sizeof(char *));
-            sub_argv[nargv - 1 + cur_ext->sendmail_nargv] = NULL;
+            sub_argv[nargv + cur_ext->sendmail_nargv] = NULL;
 
             execvp(cur_ext->sendmail_argv[0], (char **const) sub_argv);
             err(1, "execvp failed");
