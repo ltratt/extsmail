@@ -106,8 +106,36 @@ char *mk_str(char *);
         return TSTRING;
     }
 
-.    {
-        printf("Illegal char '%s'\n", yytext );
+[0-9]+[dhms] {
+        char *ep;
+        errno = 0;
+        time_t num = strtol(yytext, &ep, 10);
+        if (ep != yytext + strlen(yytext) - 1)
+            errx(1, "Invalid number '%.*s'\n", (int) strlen(yytext) - 1, yytext);
+        if (num <= 0 || num >= 365 * 24 * 60 * 60) {
+            errx(1, "Time value '%s' out of range", yytext);
+        }
+
+        switch (yytext[strlen(yytext) - 1]) {
+            case 'd':
+                yyelval.time = num * 24 * 60 * 60;
+                break;
+            case 'h':
+                yyelval.time = num * 60 * 60;
+                break;
+            case 'm':
+                yyelval.time = num * 60;
+                break;
+            case 's':
+                yyelval.time = num;
+                break;
+        }
+
+        return TTIME;
+    }
+
+.   {
+        errx(1, "Illegal char '%s'\n", yytext );
     }
 
 

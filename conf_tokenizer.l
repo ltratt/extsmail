@@ -98,7 +98,7 @@ char *mk_str(char *);
     }
 
 .    {
-        printf("Illegal char '%s'\n", yyctext );
+        errx(1, "Illegal char '%s'\n", yyctext );
     }
 
 

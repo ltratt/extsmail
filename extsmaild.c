@@ -542,14 +542,37 @@ next_group:
 
     External *cur_ext = group->externals;
     while (cur_ext != NULL) {
+        // If we're in daemon mode, and we have an external which has a timeout
+        // but which hasn't previously been tried, then we set its 'last_success'
+        // value to the current time so that timeouts are measured from the first
+        // time it is used.
+        if (conf->mode == DAEMON_MODE && cur_ext->timeout != 0 &&
+          cur_ext->last_success == 0) {
+            assert(cur_ext->working);
+            cur_ext->last_success = time(NULL);
+        }
+
         if (!cur_ext->working) {
-            // This particular external has already been found to not be
-            // working, so for this cycle we don't even bother trying it
-            // again. This is an important optimisation: if a host is down,
-            // it can take quite a while for network connections to time
-            // out, so we don't want to continually retry something that
-            // already hasn't worked. On the next cycle, the "working"
-            // flag will be reset.
+            // This particular external has previously been found to not be
+            // working in this cycle.
+
+            if (conf->mode == DAEMON_MODE) {
+                // If we're in daemon mode then, if this external has been found
+                // not to be working, check the timeout (if it exists). If the
+                // timeout hasn't been exceeded, then we have to give up on
+                // trying to send this messages via this, or other, externals -
+                // we need to wait for the timeout to be exceeded.       
+                if (cur_ext->timeout != 0 &&
+                  cur_ext->last_success + cur_ext->timeout > time(NULL)) {
+                    goto fail;
+                }
+            }
+
+            // Don't bother trying to use this external. This is an important
+            // optimisation: if a host is down, it can take quite a while for
+            // network connections to time out, so we don't want to continually
+            // retry something that already hasn't worked. On the next cycle,
+            // the "working" flag will be reset.
 
             cur_ext = cur_ext->next;
             continue;
@@ -633,9 +656,9 @@ next_group:
                         goto next;
                     }
                     else {
-                        int nw = 0; // Number of bytes written
+                        ssize_t nw = 0; // Number of bytes written
                         while (nw < nr) {
-                            int tnw = write(pipeto[1], buf + nw, nr - nw);
+                            ssize_t tnw = write(pipeto[1], buf + nw, nr - nw);
                             if (tnw == -1) {
                                 syslog(LOG_ERR, "Error when writing to '%s' process",
                                   cur_ext->sendmail);
@@ -707,6 +730,7 @@ next_group:
             free(buf);
             unlink(msg_path);
 
+            cur_ext->last_success = time(NULL);
             syslog(LOG_INFO, "Message '%s' sent", msg_path);
 
             return true;
@@ -721,7 +745,20 @@ next:
                 syslog(LOG_ERR, "Error when lseek'ing from '%s': %m", msg_path);
                 goto fail;
             }
+
             cur_ext->working = false;
+            if (conf->mode == DAEMON_MODE) {
+                // If we're in daemon mode then, if this external has been found
+                // not to be working, check the timeout (if it exists). If the
+                // timeout hasn't been exceeded, then we have to give up on
+                // trying to send this messages via this, or other, externals -
+                // we need to wait for the timeout to be exceeded.       
+                if (cur_ext->timeout != 0 &&
+                  cur_ext->last_success + cur_ext->timeout > time(NULL)) {
+                    goto fail;
+                }
+            }
+
             cur_ext = cur_ext->next;
         }
     }
@@ -780,6 +817,8 @@ int main(int argc, char** argv)
 
     if (daemonize) {
         daemon(1, 0);
+        
+        conf->mode = DAEMON_MODE;
 
 #ifdef HAVE_KQUEUE
         // On BSD, we use kqueue to monitor spool_dir/msgs so that if we're a
@@ -829,6 +868,8 @@ int main(int argc, char** argv)
         }
     }
     else {
+        conf->mode = NORMAL_MODE;
+
         openlog(__progname, LOG_PERROR, LOG_MAIL);
 
         if (!cycle(conf, groups)) {

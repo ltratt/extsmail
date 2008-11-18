@@ -44,6 +44,7 @@ Match *add_match(Match_Type, const char *);
 
 %union {
     const char *str;
+    time_t time;
     Match *match;
     External *external;
     Group *group;
@@ -59,6 +60,7 @@ Match *add_match(Match_Type, const char *);
 %token THEADER
 %token TID
 %token TSTRING
+%token TTIME
 
 
 
@@ -72,7 +74,7 @@ start : groups
         }
     ;
 
-groups : groups group
+groups : group groups
         {
             $<group>1->next = $<group>2;
 
@@ -101,7 +103,7 @@ group : TGROUP TLCB matches externals TRCB
         }
     ;
 
-matches : matches mr
+matches : mr matches
         {
             $<match>1->next = $<match>2;
 
@@ -132,7 +134,7 @@ reject : TREJECT THEADER TSTRING
         }
     ;
 
-externals : externals external
+externals : external externals
         {
             External *lhs = $<external>1;
             External *rhs = $<external>2;
@@ -149,16 +151,18 @@ external : TEXTERNAL TID
             _wk_external = malloc(sizeof(External));
             _wk_external->name = $<str>2;
             _wk_external->sendmail = NULL;
+            _wk_external->last_success = 0;
+            _wk_external->timeout = 0;
         }
     TLCB defns TRCB
         {    
             _wk_external->next = NULL;
-        
+
             $<external>$ = _wk_external;
         }
     ;
 
-defns : defns defn
+defns : defn defns
     | defn
     ;
 
@@ -249,6 +253,26 @@ defn  : TID TASSIGN TSTRING
                 _wk_external->sendmail = $<str>3;
                 _wk_external->sendmail_argv = (const char**) argv;
                 _wk_external->sendmail_nargv = nargv;
+            }
+            else if (strcmp($<str>1, "timeout") == 0) {
+                warnx("Value of incorrect type for 'timeout'");
+                YYABORT;
+            }
+            else {
+                warnx("Unknown externals var '%s'", $<str>1);
+                YYABORT;
+            }
+            
+            free((void *) $<str>1);
+        }
+    | TID TASSIGN TTIME
+        {
+            if (strcmp($<str>1, "timeout") == 0) {
+                _wk_external->timeout = $<time>3;
+            }
+            else if (strcmp($<str>1, "sendmail") == 0) {
+                warnx("Value of incorrect type for 'sendmail'");
+                YYABORT;
             }
             else {
                 warnx("Unknown externals var '%s'", $<str>1);

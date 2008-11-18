@@ -56,7 +56,7 @@ bool set_entry(const char *, const char *);
 start : defns
       ;
 
-defns : defns defn
+defns : defn defns
       | defn
       ;
     

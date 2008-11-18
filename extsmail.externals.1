@@ -64,12 +64,34 @@ reject   ::= REJECT HEADER string
 external ::= EXTERNAL ID { defn+ }
 
 defn     ::= ID = STRING
+           | ID = TIME
+
+TIME     ::= [0-9]+[dhms]
 .Ed
 .Pp
 Valid assignments within an external are:
 .Bl -tag -width Ds
 .It sendmail
-Defines the external shell command used to send e-mail. $PATH
+Defines the external shell command used to send e-mail.
+.It timeout
+If 
+.Xr extsmaild 1
+is executed in daemon mode, this value defines the length of time that
+.Xr extsmaild 1
+will retry this external before giving up and trying the next external in the
+group. Times are specified as a number followed by
+.Em d
+(days), 
+.Em h
+(hours)
+.Em m
+(minutes), or 
+.Em s
+(seconds). If
+.Xr extsmaild 1
+is executed in batch mode, the 
+.Em timeout
+value is ignored.
 .El
 .Sh FILES
 The
@@ -90,7 +112,7 @@ looks as follows:
 .Bd -literal -offset indent
 group {
     external mymachine {
-        sendmail = "/usr/bin/ssh -n -q -C -l user mymachine.net /usr/sbin/sendmail"
+        sendmail = "/usr/bin/ssh -q -C -l user mymachine.net /usr/sbin/sendmail"
     }
 }
 .Ed
@@ -109,17 +131,17 @@ group {
     match header "^To:.*@foo.com"
 
     external foo {
-        sendmail = "/usr/bin/ssh -n -q -C -l user shell.foo.com /usr/sbin/sendmail"
+        sendmail = "/usr/bin/ssh -q -C -l user shell.foo.com /usr/sbin/sendmail"
     }
 }
 
 group {
     external mymachine {
-        sendmail = "/usr/bin/ssh -n -q -C -l user mymachine.net /usr/sbin/sendmail"
+        sendmail = "/usr/bin/ssh -q -C -l user mymachine.net /usr/sbin/sendmail"
     }
 
     external bk {
-        sendmail = "/usr/bin/ssh -n -q -C -l user bk.mymachine.net /usr/sbin/sendmail"
+        sendmail = "/usr/bin/ssh -q -C -l user bk.mymachine.net /usr/sbin/sendmail"
     }
 }
 .Ed

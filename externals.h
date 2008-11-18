@@ -38,6 +38,12 @@ typedef struct _ext {
     int sendmail_nargv;         // Number of entries in sendmail_argv.
     
     bool working;               // On each cycle, reset to 'true'.
+    time_t last_success;        // The time of the last successful execution of
+                                // this external. If set to 0, this external has
+                                // not previously been tried.
+    time_t timeout;             // How many seconds before assuming this external
+                                // is dead. If set to 0, means there is no
+                                // timeout for this external.
 
     struct _ext *next;
 } External;

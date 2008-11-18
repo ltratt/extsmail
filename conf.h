@@ -19,6 +19,9 @@
 // IN THE SOFTWARE.
 
 
+typedef enum {NORMAL_MODE, DAEMON_MODE} Mode;
+
 typedef struct {
 	const char *spool_dir;
+    Mode mode;
 } Conf;
