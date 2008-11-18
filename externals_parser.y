@@ -84,7 +84,7 @@ groups : groups group
 group : TGROUP TLCB matches externals TRCB
         {
             Group *group = malloc(sizeof(Group));
-              group->matches = $<match>3;
+            group->matches = $<match>3;
             group->externals = $<external>4;
             group->next = NULL;
             
@@ -93,7 +93,7 @@ group : TGROUP TLCB matches externals TRCB
     | TGROUP TLCB externals TRCB
         {
             Group *group = malloc(sizeof(Group));
-              group->matches = NULL;
+            group->matches = NULL;
             group->externals = $<external>3;
             group->next = NULL;
             

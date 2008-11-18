@@ -34,7 +34,7 @@ typedef struct _mat {
 typedef struct _ext {
     const char *name;           // Human friendly name - can be anything.
     const char *sendmail;       // sendmail command as a string.
-    const char **sendmail_argv; // sendmail command broken up into argv for execv.
+    const char **sendmail_argv; // sendmail command broken up into argv for exec.
     int sendmail_nargv;         // Number of entries in sendmail_argv.
     
     bool working;               // On each cycle, reset to 'true'.
