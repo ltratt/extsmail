@@ -290,7 +290,7 @@ Match *add_match(Match_Type type, const char *ptn)
 
 void yyeerror(const char *s)
 {
-    warn("%s", s);
+    warnx("%s", s);
 }
 
 

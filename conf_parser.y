@@ -36,15 +36,6 @@ char *expand_path(const char *);
 bool set_entry(const char *, const char *);
 
 
-void yycerror(const char *s)
-{
-    warn("%s", s);
-}
-
-int yycwrap()
-{
-    return 1;
-}
 %}
 
 
@@ -83,6 +74,20 @@ defn  : TID TASSIGN TSTRING
 
 %%
 
+void yycerror(const char *s)
+{
+    warnx("%s", s);
+}
+
+
+
+int yycwrap()
+{
+    return 1;
+}
+
+
+
 bool set_entry(const char *id, const char *val)
 {
     if (strcmp(id, "spool_dir") == 0) {
@@ -102,5 +107,3 @@ bool set_entry(const char *id, const char *val)
     
     return true;
 }
-
-
