@@ -52,9 +52,9 @@ install: all
 	install -d ${DESTDIR}${prefix}/man/cat1
 	install -c -m 444 extsmail.cat1 ${DESTDIR}${prefix}/man/cat1/extsmail.0
 	install -c -m 444 extsmail.conf.cat1 \
-      ${DESTDIR}${prefix}/man/cat1/extsmail.conf.0
+	  ${DESTDIR}${prefix}/man/cat1/extsmail.conf.0
 	install -c -m 444 extsmail.externals.cat1 \
-      ${DESTDIR}${prefix}/man/cat1/extsmail.externals.0
+          ${DESTDIR}${prefix}/man/cat1/extsmail.externals.0
 	install -c -m 444 extsmaild.cat1 ${DESTDIR}${prefix}/man/cat1/extsmaild.0
 
 
@@ -63,7 +63,16 @@ clean:
 	  conf_parser.tab.[ch] externals_parser.tab.[ch] conf_tokenizer.c \
 	  externals_tokenizer.c
 
+
 distclean: clean
 	rm -rf configure Makefile Config.h Config.h.in autom4te.cache config.log \
-      config.status extsmail.cat1 extsmail.conf.cat1 extsmail.externals.cat1 \
-      extsmaild.cat1
+	  config.status extsmail.cat1 extsmail.conf.cat1 extsmail.externals.cat1 \
+	  extsmaild.cat1
+
+
+distrib:
+	${MAKE} distclean
+	${MAKE} -f Makefile.bootstrap
+	@read v?'extsmail version: '; mkdir extsmail-$$v; \
+          cp `ls | grep -E -v "(autom4te.cache)|(configure.in)|(Makefile.bootstrap)|(extsmail-$$v)"` extsmail-$$v; \
+          tar cfz extsmail-$$v.tar.gz extsmail-$$v; rm -rf extsmail-$$v
