@@ -1,0 +1,14 @@
+================================================================================
+  extsmail history
+================================================================================
+
+  extsmail 0.2 (2008/11/20)
+
+* Adds 'timeout' feature to externals.
+
+* Fixes bug where exec'd externals first parameter was not correctly set.
+
+
+  extsmail 0.1 (2008/11/11) 
+  
+* First public release.
