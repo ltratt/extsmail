@@ -142,11 +142,8 @@ bool check_spool_dir(Conf *conf)
         return false;
 
     char *mdp; // spool path
-    if (asprintf(&mdp, "%s%s%s", conf->spool_dir, DIR_SEP, MSGS_DIR) == -1) {
-        warnx("Unable to allocate memory");
-        free(mdp);
-        return false;
-    }
+    if (asprintf(&mdp, "%s%s%s", conf->spool_dir, DIR_SEP, MSGS_DIR) == -1)
+        errx(1, "check_spool_dir: asprintf: unable to allocate memory");
     
     if (!check_dir(mdp)) {
         free(mdp);
@@ -247,7 +244,7 @@ char *fdrdline(int fd)
         else if (line_alloc < line_len + i + 1) {
             line = realloc(line, line_len + i + 1);
             if (line == NULL)
-                errx(1, "realloc");
+                errx(1, "fdrdline: realloc");
         }
         
         memcpy(line + line_len, tmpbuf, i);
@@ -290,18 +287,12 @@ char *expand_path(const char *path)
             return NULL;
         }
 
-        if (asprintf(&exp_path, "%s%s%s", pw_ent->pw_dir, DIR_SEP, path + strlen(HOME_PFX)) == -1) {
-            free(exp_path);
-            warnx("Unable to allocate memory");
-            return NULL;
-        }
+        if (asprintf(&exp_path, "%s%s%s", pw_ent->pw_dir, DIR_SEP, path + strlen(HOME_PFX)) == -1)
+            errx(1, "expand_path: asprintf: unable to allocate memory");
     }
     else {
-        if (asprintf(&exp_path, "%s", path) == -1) {
-            free(exp_path);
-            warnx("Unable to allocate memory");
-            return NULL;
-        }
+        if (asprintf(&exp_path, "%s", path) == -1)
+            errx(1, "expand_path: asprintf: unable to allocate memory");
     }
     
     return exp_path;

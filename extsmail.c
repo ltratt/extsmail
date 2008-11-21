@@ -56,12 +56,12 @@ int main(int argc, char** argv)
     char *sp; // spool path
     if (asprintf(&sp, "%s%s%s%sXXXXXXXXXX", conf->spool_dir, DIR_SEP, MSGS_DIR,
       DIR_SEP) == -1) {
-        errx(1, "Unable to allocate memory");
+        errx(1, "main: asprintf: unable to allocate memory");
     }
     
     int sfd;
     if ((sfd = mkstemp(sp)) == -1) {
-        err(1, "When creating spool file %s", sp);
+        err(1, "mkstemp: when creating spool file %s", sp);
     }
     
     // We immediately try to gain an exclusive lock on the newly created spool
@@ -72,7 +72,7 @@ int main(int argc, char** argv)
     // full.
     
     if (flock(sfd, LOCK_EX) == -1) {
-        err(1, "When locking spool file %s", sp);
+        err(1, "flock: when locking spool file %s", sp);
     }
 
     // Open the spool file for writing. The format of the spool file is:
@@ -86,7 +86,7 @@ int main(int argc, char** argv)
     
     FILE *sf;
     if ((sf = fdopen(sfd, "w")) == NULL) {
-        err(1, NULL);
+        err(1, "main: fdopen");
     }
 
 #   define SPOOL_WRITE(fmt, args...) if (fprintf(sf, fmt, ##args) == -1) \
@@ -111,16 +111,13 @@ int main(int argc, char** argv)
     while (1) {
         size_t nr; // Number of bytes read
         if ((nr = fread(buf, 1, BUF_SIZE, stdin)) < BUF_SIZE) {
-            if (ferror(stdin)) {
-                fprintf(stderr, "%s: Error when reading stdin.", __progname);
-                exit(1);
-            }
+            if (ferror(stdin))
+                errx(1, "main: ferror");
         }
 
-        if (fwrite(buf, 1, nr, sf) < nr) {
-            fprintf(stderr, "%s: Error when writing to spool file.", __progname);
-            exit(1);
-        }
+        if (fwrite(buf, 1, nr, sf) < nr)
+            errx(1, "main: fwrite: when writing to spool file");
+
         total_nr += nr;
         
         if (feof(stdin) != 0)

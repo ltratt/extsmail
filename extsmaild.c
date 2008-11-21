@@ -89,7 +89,7 @@ void obtain_lock(Conf *conf)
 {
     if (asprintf(&lock_path, "%s%s%s", conf->spool_dir, DIR_SEP, LOCKFILE)
       == -1) {
-        errx(1, "Unable to allocate memory");
+        errx(1, "obtain_lock: asprintf: unable to allocate memory");
     }
 
     // Try and obtain the lock file.
@@ -242,7 +242,7 @@ bool cycle(Conf *conf, Group *groups)
     char *msgs_path; // msgs dir (within spool dir)
     if (asprintf(&msgs_path, "%s%s%s", conf->spool_dir, DIR_SEP, MSGS_DIR)
       == -1) {
-        errx(1, "Unable to allocate memory");
+        errx(1, "cylce: asprintf: unable to allocate memory");
     }
 
     DIR *dirp = opendir(msgs_path);
@@ -285,7 +285,7 @@ bool cycle(Conf *conf, Group *groups)
         char *msg_path;
         if (asprintf(&msg_path, "%s%s%s%s%s", conf->spool_dir, DIR_SEP,
           MSGS_DIR, DIR_SEP, dp->d_name) == -1) {
-            errx(1, "Unable to allocate memory");
+            errx(1, "cycle: asprintf: unable to allocate memory");
         }
         
         int tries = 3; // Max number of times we'll try to operate on this file.
@@ -396,7 +396,7 @@ bool try_groups(Conf *conf, Group *groups, const char *msg_path, int fd)
         
         char *arg = malloc(sa + 1);
         if (arg == NULL)
-            errx(1, "Unable to allocate memory");
+            err(1, "try_groups: malloc");
 
         ssize_t nr = read(fd, arg, sa + 1);
         if (nr < sa + 1) { // Note this also captures nr == 0 and nr == -1
@@ -418,7 +418,7 @@ bool try_groups(Conf *conf, Group *groups, const char *msg_path, int fd)
     size_t stderr_buf_alloc = STDERR_BUF_ALLOC;
     char *stderr_buf = malloc(stderr_buf_alloc);
     if (stderr_buf == NULL)
-        errx(1, "Unable to allocate memory");
+        err(1, "try_groups: malloc");
 
     // We now need to record where the actual message starts.
     
@@ -455,7 +455,7 @@ bool try_groups(Conf *conf, Group *groups, const char *msg_path, int fd)
             dhb_buf_alloc += HEADER_BUF;
             dhd_buf = realloc(dhd_buf, dhb_buf_alloc);
             if (dhd_buf == NULL)
-                errx(1, "Unable to allocate memory");
+                err(1, "try_groups: realloc");
         }
 
         int start;
@@ -507,7 +507,7 @@ bool try_groups(Conf *conf, Group *groups, const char *msg_path, int fd)
                 size_t buf_size = regerror(rtn, &match->preg, NULL, 0);
                 char *buf = malloc(buf_size);
                 if (buf == NULL)
-                    errx(1, "Out of memory");
+                    err(1, "try_groups: malloc");
                 regerror(rtn, &match->preg, buf, buf_size);
                 warnx("Error when matching regular expression '%s': %s",
                   match->regex, buf);
@@ -586,18 +586,18 @@ next_group:
 
         int pipeto[2], pipefrom[2];
         if (pipe(pipeto) == -1 || pipe(pipefrom) == -1)
-            err(1, "Can't open pipes");
+            err(1, "try_groups: pipe");
 
         pid_t pid = fork();
         if (pid == -1)
-            err(1, "Can't fork");
+            err(1, "try_groups: fork");
         else if (pid == 0) {
             // Child / sendmail process.
 
             close(STDOUT_FILENO);
             if (dup2(pipeto[0], STDIN_FILENO) == -1 || dup2(pipefrom[1],
               STDERR_FILENO) == -1)
-                err(1, "Can't dup2 pipes");
+                err(1, "try_groups: dup2");
             close(pipeto[0]);
             close(pipeto[1]);
             close(pipefrom[0]);
@@ -606,7 +606,7 @@ next_group:
             char **sub_argv = malloc((nargv + cur_ext->sendmail_nargv + 1) *
               sizeof(char *));
             if (sub_argv == NULL)
-                errx(1, "Unable to allocate memory");
+                err(1, "try_groups: malloc");
 
             memcpy(sub_argv, cur_ext->sendmail_argv,
               cur_ext->sendmail_nargv * sizeof(char *));
@@ -615,7 +615,7 @@ next_group:
             sub_argv[nargv + cur_ext->sendmail_nargv] = NULL;
 
             execvp(cur_ext->sendmail_argv[0], (char **const) sub_argv);
-            err(1, "execvp failed");
+            err(1, "try_groups: execvp");
         }
         else {
             // Parent process.
@@ -686,7 +686,7 @@ next_group:
                         stderr_buf_alloc += STDERR_BUF_ALLOC;
                         stderr_buf = realloc(stderr_buf, stderr_buf_alloc);
                         if (stderr_buf == NULL)
-                            errx(1, "Unable to allocate memory");
+                            err(1, "try_groups: realloc");
                     }
                     stderr_buf_len += nr;
                 }
@@ -829,12 +829,12 @@ int main(int argc, char** argv)
 
         int kq = kqueue();
         if (kq == -1)
-           errx(1, "kqueue");
+           errx(1, "main: kqueue");
 
         char *msgs_path; // msgs dir (within spool dir)
         if (asprintf(&msgs_path, "%s%s%s", conf->spool_dir, DIR_SEP, MSGS_DIR)
           == -1) {
-            errx(1, "Unable to allocate memory");
+            errx(1, "main: asprintf: unable to allocate memory");
         }
 
         int smf = open(msgs_path, O_RDONLY);
