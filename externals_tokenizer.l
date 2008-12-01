@@ -21,6 +21,7 @@
 
 
 #include <err.h>
+#include <errno.h>
 #include <regex.h>
 #include <stdbool.h>
 #include <string.h>

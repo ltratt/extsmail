@@ -23,6 +23,7 @@
 #include <err.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "conf.h"
 #include "conf_parser.tab.h"
