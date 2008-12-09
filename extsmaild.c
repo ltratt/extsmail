@@ -41,6 +41,7 @@
 #endif
 #ifdef HAVE_INOTIFY
 #   include <sys/inotify.h>
+#   include <sys/select.h>
 #endif
 
 #include <sys/wait.h>
@@ -861,14 +862,18 @@ int main(int argc, char** argv)
           | NOTE_LINK | NOTE_RENAME | NOTE_REVOKE,
           0, 0);
 #elif HAVE_INOTIFY
-        int fd;
-   
+        int fd,ret;
+        fd_set descriptors;
+        char buf[INOTIFY_BUFLEN];
+
+        FD_ZERO ( &descriptors );
+
         fd = inotify_init();
         if (fd < 0) {
             err(1, "main: inotify_init");
         }
    
-        if (inotify_add_watch(fd, msgs_path, IN_ALL_EVENTS) < 0) {
+        if (inotify_add_watch(fd, msgs_path, IN_ACCESS | IN_DELETE | IN_ATTRIB | IN_CLOSE_WRITE) < 0) {
             err(1, "main: inotify_add_watch");      
         }
 #endif
@@ -884,9 +889,13 @@ int main(int argc, char** argv)
             struct timespec timeout = {POLL_WAIT, 0};
             kevent(kq, &changes, 1, &events, 1, &timeout); // Ignore errors.
 #elif HAVE_INOTIFY
-            char buf[INOTIFY_BUFLEN];
-            inotify_add_watch(fd, msgs_path, IN_ALL_EVENTS);
-            read(fd, buf, INOTIFY_BUFLEN); // Ignore errors.
+            struct timespec timeout = {POLL_WAIT, 0};
+            FD_SET ( fd, &descriptors );
+            ret = pselect ( fd + 1, &descriptors, NULL, NULL, &timeout, NULL); //This does not catch errors
+            if(ret){
+              // We still have to read so we don't have a full buffer 
+              read(fd, buf, INOTIFY_BUFLEN); //No error catching :(
+            }
 #else
             // If no other support is available, we fall back on polling alone.
             sleep(POLL_WAIT);
