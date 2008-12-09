@@ -39,6 +39,10 @@
 #ifdef HAVE_KQUEUE
 #   include <sys/event.h>
 #endif
+#ifdef HAVE_INOTIFY
+#   include <sys/inotify.h>
+#endif
+
 #include <sys/wait.h>
 #include <syslog.h>
 #include <time.h>
@@ -65,6 +69,8 @@ const char *EXTERNALS_PATHS[] = {"~/.extsmail/externals",
 #define PTOC_BUFLEN 4096
 // How many seconds to wait between checking spool_dir/msgs.
 #define POLL_WAIT 60
+//Define the return buffer for inotify this can handle 1024 events
+#define BUFF_SIZE ((sizeof(struct inotify_event)+FILENAME_MAX)*1024)
 
 extern char* __progname;
 
@@ -791,6 +797,8 @@ int main(int argc, char** argv)
 {
     bool daemonize = false;
     int ch;
+    //The error return val for kevent or read
+    int ret;
     while ((ch = getopt(argc, argv, "dh")) != -1) {
         switch (ch) {
             case 'd':
@@ -820,6 +828,13 @@ int main(int argc, char** argv)
         
         conf->mode = DAEMON_MODE;
 
+        char *msgs_path; // msgs dir (within spool dir)
+        if (asprintf(&msgs_path, "%s%s%s", conf->spool_dir, DIR_SEP, MSGS_DIR)
+          == -1) {
+            errx(1, "main: asprintf: unable to allocate memory");
+        }
+
+
 #ifdef HAVE_KQUEUE
         // On BSD, we use kqueue to monitor spool_dir/msgs so that if we're a
         // daemon then, as soon as someone starts fiddling with it (i.e. extsmail
@@ -831,11 +846,6 @@ int main(int argc, char** argv)
         if (kq == -1)
            errx(1, "main: kqueue");
 
-        char *msgs_path; // msgs dir (within spool dir)
-        if (asprintf(&msgs_path, "%s%s%s", conf->spool_dir, DIR_SEP, MSGS_DIR)
-          == -1) {
-            errx(1, "main: asprintf: unable to allocate memory");
-        }
 
         int smf = open(msgs_path, O_RDONLY);
         if (smf == -1)
@@ -849,7 +859,27 @@ int main(int argc, char** argv)
           | NOTE_LINK | NOTE_RENAME | NOTE_REVOKE,
           0, 0);
 #endif
-    
+#ifdef HAVE_INOTIFY
+        // On Linux, we use inotify to monitor spool_dir/msgs so that if we're a
+        // daemon then, as soon as someone starts fiddling with it (i.e. extsmail
+        // putting a new message in there) we try to send all messages. This
+        // gives the nice illusion that message sending with extsmail is pretty
+        // much instant.
+        int fd;
+        int wd;   /* watch descriptor */
+        char buff[BUFF_SIZE] = {0};
+
+   
+        fd = inotify_init();
+        if (fd < 0) {
+          errx (1, "main:inotify_init %s\n", strerror(errno));
+        }
+   
+        wd = inotify_add_watch (fd, msgs_path, IN_ALL_EVENTS);
+        if (wd < 0) {
+          errx (1, "When opening: %s\n", strerror(errno));      
+        }
+#endif    
         openlog(__progname, LOG_CONS, LOG_MAIL);
 
         while (1) {
@@ -860,11 +890,18 @@ int main(int argc, char** argv)
             // is in case the network goes up and down - we can't just wait
             // until the user tries sending messages.
             struct timespec timeout = {POLL_WAIT, 0};
-            kevent(kq, &changes, 1, &events, 1, &timeout);
+            ret = kevent(kq, &changes, 1, &events, 1, &timeout);
+#else
+#ifdef HAVE_INOTIFY
+            ret = read (fd, buff, BUFF_SIZE);
 #else
             // If no other support is available, we fall back on polling alone.
             sleep(POLL_WAIT);
 #endif
+#endif
+            if(ret < 0){
+              errx (1, "Error: %s\n", strerror(errno));
+            }
         }
     }
     else {
