@@ -69,8 +69,11 @@ const char *EXTERNALS_PATHS[] = {"~/.extsmail/externals",
 #define PTOC_BUFLEN 4096
 // How many seconds to wait between checking spool_dir/msgs.
 #define POLL_WAIT 60
-//Define the return buffer for inotify this can handle 1024 events
-#define BUFF_SIZE ((sizeof(struct inotify_event)+FILENAME_MAX)*1024)
+
+#ifdef HAVE_INOTIFY
+// Size in bytes of the inotify buffer.
+#define INOTIFY_BUFLEN ((sizeof(struct inotify_event)+FILENAME_MAX)*1024)
+#endif
 
 extern char* __progname;
 
@@ -834,18 +837,17 @@ int main(int argc, char** argv)
             errx(1, "main: asprintf: unable to allocate memory");
         }
 
-
-#ifdef HAVE_KQUEUE
-        // On BSD, we use kqueue to monitor spool_dir/msgs so that if we're a
+        // On platforms that support an appropriate mechanism (such as kqueue
+        // or inotify), we try and monitor spool_dir/msgs so that if we're a
         // daemon then, as soon as someone starts fiddling with it (i.e. extsmail
         // putting a new message in there) we try to send all messages. This
         // gives the nice illusion that message sending with extsmail is pretty
         // much instant.
 
+#ifdef HAVE_KQUEUE
         int kq = kqueue();
         if (kq == -1)
-           errx(1, "main: kqueue");
-
+           err(1, "main: kqueue");
 
         int smf = open(msgs_path, O_RDONLY);
         if (smf == -1)
@@ -858,28 +860,18 @@ int main(int argc, char** argv)
           NOTE_DELETE | NOTE_WRITE | NOTE_EXTEND | NOTE_TRUNCATE | NOTE_ATTRIB
           | NOTE_LINK | NOTE_RENAME | NOTE_REVOKE,
           0, 0);
-#endif
-#ifdef HAVE_INOTIFY
-        // On Linux, we use inotify to monitor spool_dir/msgs so that if we're a
-        // daemon then, as soon as someone starts fiddling with it (i.e. extsmail
-        // putting a new message in there) we try to send all messages. This
-        // gives the nice illusion that message sending with extsmail is pretty
-        // much instant.
+#elif HAVE_INOTIFY
         int fd;
-        int wd;   /* watch descriptor */
-        char buff[BUFF_SIZE] = {0};
-
    
         fd = inotify_init();
         if (fd < 0) {
-          errx (1, "main:inotify_init %s\n", strerror(errno));
+            err(1, "main: inotify_init");
         }
    
-        wd = inotify_add_watch (fd, msgs_path, IN_ALL_EVENTS);
-        if (wd < 0) {
-          errx (1, "When opening: %s\n", strerror(errno));      
+        if (inotify_add_watch(fd, msgs_path, IN_ALL_EVENTS) < 0) {
+            err(1, "main: inotify_add_watch");      
         }
-#endif    
+#endif
         openlog(__progname, LOG_CONS, LOG_MAIL);
 
         while (1) {
@@ -890,18 +882,15 @@ int main(int argc, char** argv)
             // is in case the network goes up and down - we can't just wait
             // until the user tries sending messages.
             struct timespec timeout = {POLL_WAIT, 0};
-            ret = kevent(kq, &changes, 1, &events, 1, &timeout);
-#else
-#ifdef HAVE_INOTIFY
-            ret = read (fd, buff, BUFF_SIZE);
+            kevent(kq, &changes, 1, &events, 1, &timeout); // Ignore errors.
+#elif HAVE_INOTIFY
+            char buf[INOTIFY_BUFLEN];
+            inotify_add_watch(fd, msgs_path, IN_ALL_EVENTS);
+            read(fd, buf, INOTIFY_BUFLEN); // Ignore errors.
 #else
             // If no other support is available, we fall back on polling alone.
             sleep(POLL_WAIT);
 #endif
-#endif
-            if(ret < 0){
-              errx (1, "Error: %s\n", strerror(errno));
-            }
         }
     }
     else {
