@@ -20,6 +20,8 @@
 // IN THE SOFTWARE.
 
 
+#include "Config.h"
+
 #include <err.h>
 #include <stdbool.h>
 #include <string.h>

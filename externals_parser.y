@@ -20,10 +20,14 @@
 // IN THE SOFTWARE.
 
 
+#include "Config.h"
+
 #include <err.h>
 #include <regex.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "conf.h"
 #include "externals.h"

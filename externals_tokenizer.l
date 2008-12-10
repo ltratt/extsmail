@@ -20,6 +20,8 @@
 // IN THE SOFTWARE.
 
 
+#include "Config.h"
+
 #include <err.h>
 #include <errno.h>
 #include <regex.h>

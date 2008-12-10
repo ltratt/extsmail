@@ -32,6 +32,7 @@ AC_LANG(C)
 AC_PROG_CC
 AC_ISC_POSIX
 AC_PROG_GCC_TRADITIONAL
+AC_GNU_SOURCE
 
 
 ####################################################################################################
