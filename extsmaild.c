@@ -38,8 +38,7 @@
 #include <sys/types.h>
 #ifdef HAVE_KQUEUE
 #   include <sys/event.h>
-#endif
-#ifdef HAVE_INOTIFY
+#elif HAVE_INOTIFY
 #   include <sys/inotify.h>
 #   include <sys/select.h>
 #endif
@@ -73,7 +72,7 @@ const char *EXTERNALS_PATHS[] = {"~/.extsmail/externals",
 
 #ifdef HAVE_INOTIFY
 // Size in bytes of the inotify buffer.
-#define INOTIFY_BUFLEN ((sizeof(struct inotify_event)+FILENAME_MAX)*1024)
+#   define INOTIFY_BUFLEN ((sizeof(struct inotify_event)+FILENAME_MAX)*1024)
 #endif
 
 extern char* __progname;
@@ -862,39 +861,48 @@ int main(int argc, char** argv)
           | NOTE_LINK | NOTE_RENAME | NOTE_REVOKE,
           0, 0);
 #elif HAVE_INOTIFY
-        int fd,ret;
-        fd_set descriptors;
-        char buf[INOTIFY_BUFLEN];
-
-        FD_ZERO ( &descriptors );
-
-        fd = inotify_init();
+        int fd = inotify_init();
         if (fd < 0) {
             err(1, "main: inotify_init");
         }
    
-        if (inotify_add_watch(fd, msgs_path, IN_ACCESS | IN_DELETE | IN_ATTRIB | IN_CLOSE_WRITE) < 0) {
+        if (inotify_add_watch(fd, msgs_path,
+          IN_ACCESS | IN_DELETE | IN_ATTRIB | IN_CLOSE_WRITE) < 0) {
             err(1, "main: inotify_add_watch");      
         }
 #endif
+
         openlog(__progname, LOG_CONS, LOG_MAIL);
 
         while (1) {
             cycle(conf, groups);
+
+            // On platforms that support an appropriate mechanism (such as kqueue
+            // or inotify), we try and send messages as soon as we notice changes
+            // to spool_dir/msgs. We also wake-up every POLL_WAIT seconds to
+            // check the queue and send messages. This is in case the network
+            // goes up and down - we can't just wait until the user tries sending
+            // messages.
+            //
+            // Note that if kqueue / inotify return errors, they are deliberately
+            // ignored: while support for these mechanisms is very nice, it's
+            // still possible for extsmaild to operate without them.
+            
 #ifdef HAVE_KQUEUE
-            // On BSD we use kqueue to watch spool_dir/msgs but we also try,
-            // every POLL_WAIT, seconds to try sending messages as well. This
-            // is in case the network goes up and down - we can't just wait
-            // until the user tries sending messages.
             struct timespec timeout = {POLL_WAIT, 0};
-            kevent(kq, &changes, 1, &events, 1, &timeout); // Ignore errors.
+            kevent(kq, &changes, 1, &events, 1, &timeout);
 #elif HAVE_INOTIFY
+            fd_set descriptors;
+            FD_ZERO(&descriptors);
+            FD_SET(fd, &descriptors);
             struct timespec timeout = {POLL_WAIT, 0};
-            FD_SET ( fd, &descriptors );
-            ret = pselect ( fd + 1, &descriptors, NULL, NULL, &timeout, NULL); //This does not catch errors
-            if(ret){
-              // We still have to read so we don't have a full buffer 
-              read(fd, buf, INOTIFY_BUFLEN); //No error catching :(
+            if (pselect(fd + 1, &descriptors, NULL, NULL, &timeout, NULL) != -1)
+            {
+                // Even though we don't care what the result of the inotify read
+                // is, we still need to read from it so that the buffer doesn't
+                // fill up.
+                char buf[INOTIFY_BUFLEN];
+                read(fd, buf, INOTIFY_BUFLEN);
             }
 #else
             // If no other support is available, we fall back on polling alone.
