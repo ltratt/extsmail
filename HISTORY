@@ -2,6 +2,13 @@
   extsmail history
 ================================================================================
 
+  extsmail 0.3 (2008/12/11)
+
+* Make Linux support on a par with BSD (using inotify).
+
+* Minor error handling / reporting changes.
+
+
   extsmail 0.2 (2008/11/20)
 
 * Adds 'timeout' feature to externals.
