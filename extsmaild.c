@@ -605,14 +605,14 @@ next_group:
 
         int pipeto[2], pipefrom[2];
         if (pipe(pipeto) == -1 || pipe(pipefrom) == -1) {
-            syslog(LOG_CRIT, "try_groups: pipe: %m");
-            exit(1);
+            syslog(LOG_ERR, "try_groups: pipe: %m");
+            goto fail;
         }
 
         pid_t pid = fork();
         if (pid == -1) {
-            syslog(LOG_CRIT, "try_groups: fork: %m");
-            exit(1);
+            syslog(LOG_ERR, "try_groups: fork: %m");
+            goto fail;
         }
         else if (pid == 0) {
             // Child / sendmail process.
