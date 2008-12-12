@@ -253,7 +253,7 @@ char *fdrdline(int fd)
         if (i < nr) {
             if (lseek(fd, 1 -(nr - i), SEEK_CUR) == -1) {
                 free(line);
-                return line;
+                return NULL;
             }
             break;
         }
