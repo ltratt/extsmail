@@ -251,7 +251,8 @@ bool cycle(Conf *conf, Group *groups)
     char *msgs_path; // msgs dir (within spool dir)
     if (asprintf(&msgs_path, "%s%s%s", conf->spool_dir, DIR_SEP, MSGS_DIR)
       == -1) {
-        errx(1, "cylce: asprintf: unable to allocate memory");
+        syslog(LOG_CRIT, "cycle: asprintf: unable to allocate memory");
+        exit(1);
     }
 
     DIR *dirp = opendir(msgs_path);
@@ -294,7 +295,8 @@ bool cycle(Conf *conf, Group *groups)
         char *msg_path;
         if (asprintf(&msg_path, "%s%s%s%s%s", conf->spool_dir, DIR_SEP,
           MSGS_DIR, DIR_SEP, dp->d_name) == -1) {
-            errx(1, "cycle: asprintf: unable to allocate memory");
+            syslog(LOG_CRIT, "cycle: asprintf: unable to allocate memory");
+            exit(1);
         }
         
         int tries = 3; // Max number of times we'll try to operate on this file.
@@ -404,8 +406,10 @@ bool try_groups(Conf *conf, Group *groups, const char *msg_path, int fd)
         free(as);
         
         char *arg = malloc(sa + 1);
-        if (arg == NULL)
-            err(1, "try_groups: malloc");
+        if (arg == NULL) {
+            syslog(LOG_CRIT, "try_groups: malloc: %m");
+            exit(1);
+        }
 
         ssize_t nr = read(fd, arg, sa + 1);
         if (nr < sa + 1) { // Note this also captures nr == 0 and nr == -1
@@ -426,8 +430,10 @@ bool try_groups(Conf *conf, Group *groups, const char *msg_path, int fd)
     
     size_t stderr_buf_alloc = STDERR_BUF_ALLOC;
     char *stderr_buf = malloc(stderr_buf_alloc);
-    if (stderr_buf == NULL)
-        err(1, "try_groups: malloc");
+    if (stderr_buf == NULL) {
+        syslog(LOG_CRIT, "try_groups: malloc: %m");
+        exit(1);
+    }
 
     // We now need to record where the actual message starts.
     
@@ -463,8 +469,10 @@ bool try_groups(Conf *conf, Group *groups, const char *msg_path, int fd)
         while (dhd_buf_len + line_len + 1 > dhb_buf_alloc) {
             dhb_buf_alloc += HEADER_BUF;
             dhd_buf = realloc(dhd_buf, dhb_buf_alloc);
-            if (dhd_buf == NULL)
-                err(1, "try_groups: realloc");
+            if (dhd_buf == NULL) {
+                syslog(LOG_CRIT, "try_groups: realloc: %m");
+                exit(1);
+            }
         }
 
         int start;
@@ -515,8 +523,10 @@ bool try_groups(Conf *conf, Group *groups, const char *msg_path, int fd)
             if (!(rtn == 0 || rtn == REG_NOMATCH)) {
                 size_t buf_size = regerror(rtn, &match->preg, NULL, 0);
                 char *buf = malloc(buf_size);
-                if (buf == NULL)
-                    err(1, "try_groups: malloc");
+                if (buf == NULL) {
+                    syslog(LOG_CRIT, "try_groups: malloc: %m");
+                    exit(1);
+                }
                 regerror(rtn, &match->preg, buf, buf_size);
                 warnx("Error when matching regular expression '%s': %s",
                   match->regex, buf);
@@ -594,19 +604,25 @@ next_group:
         // report errors to the user).
 
         int pipeto[2], pipefrom[2];
-        if (pipe(pipeto) == -1 || pipe(pipefrom) == -1)
-            err(1, "try_groups: pipe");
+        if (pipe(pipeto) == -1 || pipe(pipefrom) == -1) {
+            syslog(LOG_CRIT, "try_groups: pipe: %m");
+            exit(1);
+        }
 
         pid_t pid = fork();
-        if (pid == -1)
-            err(1, "try_groups: fork");
+        if (pid == -1) {
+            syslog(LOG_CRIT, "try_groups: fork: %m");
+            exit(1);
+        }
         else if (pid == 0) {
             // Child / sendmail process.
 
             close(STDOUT_FILENO);
             if (dup2(pipeto[0], STDIN_FILENO) == -1 || dup2(pipefrom[1],
-              STDERR_FILENO) == -1)
-                err(1, "try_groups: dup2");
+              STDERR_FILENO) == -1) {
+                syslog(LOG_CRIT, "try_groups: dup2: %m");
+                exit(1);
+            }
             close(pipeto[0]);
             close(pipeto[1]);
             close(pipefrom[0]);
@@ -614,8 +630,10 @@ next_group:
 
             char **sub_argv = malloc((nargv + cur_ext->sendmail_nargv + 1) *
               sizeof(char *));
-            if (sub_argv == NULL)
-                err(1, "try_groups: malloc");
+            if (sub_argv == NULL) {
+                syslog(LOG_CRIT, "try_groups: malloc: %m");
+                exit(1);
+            }
 
             memcpy(sub_argv, cur_ext->sendmail_argv,
               cur_ext->sendmail_nargv * sizeof(char *));
@@ -624,7 +642,8 @@ next_group:
             sub_argv[nargv + cur_ext->sendmail_nargv] = NULL;
 
             execvp(cur_ext->sendmail_argv[0], (char **const) sub_argv);
-            err(1, "try_groups: execvp");
+            syslog(LOG_CRIT, "try_groups: execvp: %m");
+            exit(1);
         }
         else {
             // Parent process.
@@ -694,8 +713,10 @@ next_group:
                     else if ((size_t) nr == stderr_buf_alloc - stderr_buf_len) {
                         stderr_buf_alloc += STDERR_BUF_ALLOC;
                         stderr_buf = realloc(stderr_buf, stderr_buf_alloc);
-                        if (stderr_buf == NULL)
-                            err(1, "try_groups: realloc");
+                        if (stderr_buf == NULL) {
+                            syslog(LOG_CRIT, "try_groups: realloc: %m");
+                            exit(1);
+                        }
                     }
                     stderr_buf_len += nr;
                 }
@@ -834,7 +855,8 @@ int main(int argc, char** argv)
         char *msgs_path; // msgs dir (within spool dir)
         if (asprintf(&msgs_path, "%s%s%s", conf->spool_dir, DIR_SEP, MSGS_DIR)
           == -1) {
-            errx(1, "main: asprintf: unable to allocate memory");
+            syslog(LOG_CRIT, "main: asprintf: unable to allocate memory");
+            exit(1);
         }
 
         // On platforms that support an appropriate mechanism (such as kqueue
@@ -846,12 +868,16 @@ int main(int argc, char** argv)
 
 #ifdef HAVE_KQUEUE
         int kq = kqueue();
-        if (kq == -1)
-           err(1, "main: kqueue");
+        if (kq == -1) {
+            syslog(LOG_CRIT, "main: kqueue: %m");
+            exit(1);
+        }
 
         int smf = open(msgs_path, O_RDONLY);
-        if (smf == -1)
-           err(1, "When opening '%s'", msgs_path);
+        if (smf == -1) {
+            syslog(LOG_CRIT, "When opening '%s': %m", msgs_path);
+            exit(1);
+        }
 
         struct kevent changes;
         struct kevent events;
@@ -863,12 +889,14 @@ int main(int argc, char** argv)
 #elif HAVE_INOTIFY
         int fd = inotify_init();
         if (fd < 0) {
-            err(1, "main: inotify_init");
+            syslog(LOG_CRIT, "main: inotify_init: %m");
+            exit(1);
         }
    
         if (inotify_add_watch(fd, msgs_path,
           IN_ACCESS | IN_DELETE | IN_ATTRIB | IN_CLOSE_WRITE) < 0) {
-            err(1, "main: inotify_add_watch");      
+            syslog(LOG_CRIT, "main: inotify_add_watch: %m");
+            exit(1);
         }
 #endif
 
