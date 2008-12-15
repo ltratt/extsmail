@@ -1,4 +1,4 @@
-.SUFFIXES: .cat1 .1
+.SUFFIXES: .1 .cat1
 
 .1.cat1:
 	nroff -mandoc $< > $@
@@ -12,8 +12,7 @@ bindir = @bindir@
 INSTALL = @INSTALL@
 
 
-all: extsmail extsmaild extsmail.cat1 extsmail.conf.cat1 \
-       extsmail.externals.cat1 extsmaild.cat1
+all: extsmail extsmaild man
 
 
 EXTSMAIL_OBJS = conf_parser.tab.o conf_tokenizer.o extsmail.o common.o
@@ -45,6 +44,11 @@ externals_tokenizer.c: externals_tokenizer.l
 	lex -Pyye -oexternals_tokenizer.c externals_tokenizer.l
 
 
+MAN_PAGES = extsmail.cat1 extsmail.conf.cat1 extsmail.externals.cat1 extsmaild.cat1
+
+man: ${MAN_PAGES}
+
+
 install: all
 	install -d ${DESTDIR}${bindir}
 	install -c -m 555 extsmail ${DESTDIR}${bindir}
@@ -54,14 +58,14 @@ install: all
 	install -c -m 444 extsmail.conf.cat1 \
 	  ${DESTDIR}${prefix}/man/cat1/extsmail.conf.0
 	install -c -m 444 extsmail.externals.cat1 \
-          ${DESTDIR}${prefix}/man/cat1/extsmail.externals.0
+      ${DESTDIR}${prefix}/man/cat1/extsmail.externals.0
 	install -c -m 444 extsmaild.cat1 ${DESTDIR}${prefix}/man/cat1/extsmaild.0
 
 
 clean:
 	rm -f extsmail extsmaild ${EXTSMAIL_OBJS} ${EXTSMAILD_OBJS} \
 	  conf_parser.tab.[ch] externals_parser.tab.[ch] conf_tokenizer.c \
-	  externals_tokenizer.c
+	  externals_tokenizer.c ${MAN_PAGES}
 
 
 distclean: clean
