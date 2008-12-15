@@ -811,7 +811,7 @@ fail:
 
 void usage(int rtn_code)
 {
-    fprintf(stderr, "Usage: %s [-d]\n", __progname);
+    fprintf(stderr, "Usage: %s [-m <batch|daemon>]\n", __progname);
     exit(rtn_code);
 }
 
@@ -819,14 +819,17 @@ void usage(int rtn_code)
 
 int main(int argc, char** argv)
 {
-    bool daemonize = false;
+    Mode mode = BATCH_MODE;
     int ch;
-    //The error return val for kevent or read
-    int ret;
-    while ((ch = getopt(argc, argv, "dh")) != -1) {
+    while ((ch = getopt(argc, argv, "hm:")) != -1) {
         switch (ch) {
-            case 'd':
-                daemonize = true;
+            case 'm':
+                if (strcmp(optarg, "batch") == 0)
+                    mode = BATCH_MODE;
+                else if (strcmp(optarg, "daemon") == 0)
+                    mode = DAEMON_MODE;
+                else
+                    usage(0);
                 break;
             case 'h':
                 usage(0);
@@ -847,7 +850,7 @@ int main(int argc, char** argv)
     if (!check_spool_dir(conf))
         exit(1);
 
-    if (daemonize) {
+    if (mode == DAEMON_MODE) {
         daemon(1, 0);
         
         conf->mode = DAEMON_MODE;
@@ -939,7 +942,7 @@ int main(int argc, char** argv)
         }
     }
     else {
-        conf->mode = NORMAL_MODE;
+        conf->mode = BATCH_MODE;
 
         openlog(__progname, LOG_PERROR, LOG_MAIL);
 

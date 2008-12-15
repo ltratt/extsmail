@@ -25,21 +25,26 @@
 .Nd robust sending of e-mail to external commands
 .Sh SYNOPSIS
 .Nm extsmaild
-.Op Fl d
+.Op Fl m Ar mode
 .Sh DESCRIPTION
 .Nm
 sends messages spooled by
 .Xr extsmail 1 .
-If called without switches,
+If called without 
+.Fl m
+specified, or if
+.Fl m Ar batch
+is specified,
 .Nm
-runs as a foreground process and terminates after trying to send all messages; it returns
+operates in batch mode, running as a foreground process and terminating after
+trying to send all messages; it returns
 .Er 0
 if all messages were sent successfully
 .Er 1
 if any messages remain unsent.
 .Pp
 If called with the
-.Fl d
+.Fl m Ar daemon
 switch,
 .Nm
 operates as a long running daemon; it monitors the spool directory and when it notices changes to the directory (or a fixed period has elapsed) it tries to send any unsent messages. This means that even on unreliable networks,
