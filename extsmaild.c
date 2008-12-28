@@ -685,8 +685,8 @@ next_group:
                         close(pipeto[1]);
                     }
                     else if (nr == -1) {
-                        syslog(LOG_ERR, "Error when reading from '%s'",
-                          msg_path);
+                        syslog(LOG_ERR, "%s: Error when reading from '%s'",
+                          cur_ext->name, msg_path);
                         goto next;
                     }
                     else {
@@ -694,8 +694,8 @@ next_group:
                         while (nw < nr) {
                             ssize_t tnw = write(pipeto[1], buf + nw, nr - nw);
                             if (tnw == -1) {
-                                syslog(LOG_ERR, "Error when writing to '%s' process",
-                                  cur_ext->sendmail);
+                                syslog(LOG_ERR, "%s: Error when writing to '%s'"
+                                  " process", cur_ext->name, cur_ext->sendmail);
                                 goto next;
                             }
                             nw += tnw;
@@ -708,8 +708,8 @@ next_group:
                     ssize_t nr = read(pipefrom[0], stderr_buf + stderr_buf_len, 
                       stderr_buf_alloc - stderr_buf_len);
                     if (nr == -1) {
-                        syslog(LOG_ERR, "When reading stderr from '%s': %m",
-                          cur_ext->sendmail);
+                        syslog(LOG_ERR, "%s: When reading stderr from '%s': %m",
+                          cur_ext->name, cur_ext->sendmail);
                         goto next;
                     }
                     else if (nr == 0) {
@@ -744,9 +744,9 @@ next_group:
             if (waitpid(pid, &status, 0) || WIFEXITED(status)) {
                 int child_rtn = WEXITSTATUS(status);
                 if (child_rtn != 0) {
-                    syslog(LOG_ERR, "Received error %d when executing "
-                      "'%s' on '%s': %.*s", child_rtn, cur_ext->sendmail,
-                      msg_path, stderr_buf_len, stderr_buf);
+                    syslog(LOG_ERR, "%s: Received error %d when executing "
+                      "'%s' on '%s': %.*s", cur_ext->name, child_rtn,
+                      cur_ext->sendmail, msg_path, stderr_buf_len, stderr_buf);
                     goto next;
                 }
             }
@@ -767,7 +767,7 @@ next_group:
             unlink(msg_path);
 
             cur_ext->last_success = time(NULL);
-            syslog(LOG_INFO, "Message '%s' sent", msg_path);
+            syslog(LOG_INFO, "%s: Message '%s' sent", cur_ext->name, msg_path);
 
             return true;
 
@@ -778,7 +778,8 @@ next:
             if (!eof_stderr)
                 close(pipefrom[0]);
             if (lseek(fd, mf_body_off, SEEK_SET) == -1) {
-                syslog(LOG_ERR, "Error when lseek'ing from '%s': %m", msg_path);
+                syslog(LOG_ERR, "%s: Error when lseek'ing from '%s': %m",
+                  cur_ext->name, msg_path);
                 goto fail;
             }
 
