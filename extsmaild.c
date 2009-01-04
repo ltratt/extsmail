@@ -111,9 +111,11 @@ void obtain_lock(Conf *conf)
         if (errno != EEXIST)
             err(1, "Unable to obtain lockfile '%s'", lock_path);
     }
+
     if (flock(lock_fd, LOCK_EX | LOCK_NB) == -1) {
         err(1, "Unable to obtain lockfile '%s'", lock_path);
     }
+
     fchmod(lock_fd, S_IRUSR | S_IWUSR | S_IXUSR);
     
     // Install an exit handler and signal trap so that, barring something going
@@ -310,9 +312,9 @@ bool cycle(Conf *conf, Group *groups)
             }
 
             if (flock(fd, LOCK_EX | LOCK_NB) == -1) {
-                if (errno == EWOULDBLOCK) {
+                if (errno == EWOULDBLOCK)
                     goto next;
-                }
+
                 err(1, "cycle: flock: when locking spool file %s", msg_path);
             }
 
