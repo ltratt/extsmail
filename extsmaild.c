@@ -307,50 +307,59 @@ bool cycle(Conf *conf, Group *groups)
         
         int tries = 3; // Max number of times we'll try to operate on this file.
         while (1) {
-            int fd = open(msg_path, O_RDONLY | O_EXCL | O_NONBLOCK);
+            int fd = open(msg_path, O_RDONLY);
             if (fd == -1) {
-                // If we can't open the file then we're clearly stuffed.
+                // If we couldn't so much as open the file, something odd has
+                // happened.
                 all_sent = false;
                 break;
             }
-            else {
-                // We've now got an exclusive lock on the file.
-                struct stat msg_st;
-                if (fstat(fd, &msg_st) == -1) {
-                    // If stat failed then something odd has happened and it's
-                    // best to bail out for the time being.
+
+            if (flock(fd, LOCK_EX | LOCK_NB) == -1) {
+                if (errno == EWOULDBLOCK) {
+                    goto next;
+                }
+                err(1, "cycle: flock: when locking spool file %s", msg_path);
+            }
+
+            // We've now got an exclusive lock on the file.
+            struct stat msg_st;
+            if (fstat(fd, &msg_st) == -1) {
+                // If stat failed then something odd has happened and it's
+                // best to bail out for the time being.
+                close(fd);
+                all_sent = false;
+                break;
+            }
+
+            // If the file is zero size which means that we managed to
+            // interrupt extsmail before it had managed to obtain an
+            // exclusive lock and write any data to the file. In such a case
+            // we don't try and do anything; instead (below) we sleep a
+            // second and then try again. This is because in general we
+            // assume that extsmail will have finished with a file in at
+            // most a couple of seconds (and probably much less).
+
+            if (msg_st.st_size > 0) {
+                if (try_groups(conf, groups, msg_path, fd)) {
                     close(fd);
-                    all_sent = false;
                     break;
                 }
-                
-                // If the file is zero size which means that we managed to
-                // interrupt extsmail before it had managed to obtain an
-                // exclusive lock and write any data to the file. In such a case
-                // we don't try and do anything; instead (below) we sleep a
-                // second and then try again. This is because in general we
-                // assume that extsmail will have finished with a file in at
-                // most a couple of seconds (and probably much less).
-
-                if (msg_st.st_size > 0) {
-                    if (try_groups(conf, groups, msg_path, fd)) {
-                        close(fd);
-                        break;
-                    }
-                    else {
-                        all_sent = false;
-                        close(fd);
-                        break;
-                    }
+                else {
+                    all_sent = false;
+                    close(fd);
+                    break;
                 }
-
-                close(fd);
             }
+
+            close(fd);
             
-            // At this point, we've released the exclusive lock we'd previously
-            // gained, because we'd gained it before any data had been written to
-            // the spool file. Assuming we haven't tried this too many times, we
-            // now try sleeping for a second and then having another go.
+next:
+            // At this point, either we've released the exclusive lock we'd
+            // previously gained (because we'd gained it before any data had
+            // been written to the spool file) or we weren't able to gain the
+            // lock at all. Assuming we haven't tried this too many times, we now
+            // try sleeping for a second and then having another go.
             
             tries -= 1;
             if (tries < 0) {
