@@ -90,6 +90,7 @@ bool try_groups(Conf *, Group *, const char *, int);
 //
 
 char *lock_path;
+int lock_fd;
 
 void lock_exit();
 void sigterm_trap(int);
@@ -101,28 +102,19 @@ void obtain_lock(Conf *conf)
         errx(1, "obtain_lock: asprintf: unable to allocate memory");
     }
 
-    // Try and obtain the lock file.
+    // Try and obtain the lock file. We do this by trying to create a lock file
+    // and then gaining a lock on it. If the lock file exists but there isn't
+    // a lock on it then we assume the lock file is stale and that there's no
+    // running extsmaild.
 
-    int lockd;
-    if ((lockd = open(lock_path, O_CREAT | O_EXCL | O_RDWR)) == -1) {
-        if (errno == EEXIST)
-            errx(1, "Lockfile '%s' already exists", lock_path);
-        else
+    if ((lock_fd = open(lock_path, O_CREAT | O_RDWR)) == -1) {
+        if (errno != EEXIST)
             err(1, "Unable to obtain lockfile '%s'", lock_path);
     }
-    fchmod(lockd, S_IRUSR | S_IWUSR | S_IXUSR);
-    
-    // We now try, optionally, to dump our PID into the lock file: this is
-    // purely in case the user wants to investigate the process later. It is not
-    // used for any purposes. Hence if we fail to write the PID we don't
-    // consider it to be an error.
-    
-    FILE *lockf = fdopen(lockd, "r+");
-    if (lockf != NULL) {
-        fprintf(lockf, "%d", getpid());
-        fclose(lockf);
+    if (flock(lock_fd, LOCK_EX | LOCK_NB) == -1) {
+        err(1, "Unable to obtain lockfile '%s'", lock_path);
     }
-    close(lockd);
+    fchmod(lock_fd, S_IRUSR | S_IWUSR | S_IXUSR);
     
     // Install an exit handler and signal trap so that, barring something going
     // catastrophically wrong, the lockfile is removed on exit.
@@ -149,6 +141,8 @@ void obtain_lock(Conf *conf)
 void lock_exit()
 {
     unlink(lock_path);
+    flock(lock_fd, LOCK_UN);
+    close(lock_fd);
 }
 
 
