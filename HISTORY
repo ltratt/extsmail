@@ -2,6 +2,21 @@
   extsmail history
 ================================================================================
 
+  extsmail 1.0 (2008/01/05)
+
+* extsmaild's modes are now specified via the "-m <mode name>" switch. In
+  particular the behaviour of the "-d" switch is now obtained with "-m daemon".
+
+* More intelligent detection of whether a previous instance of extsmaild is
+  running or not.
+
+* Systematically use syslog.
+
+* Fix possible race condition between extsmail and extsmaild.
+
+* Correctly handle SIGPIPE.
+
+
   extsmail 0.3 (2008/12/11)
 
 * Make Linux support on a par with BSD (using inotify).
