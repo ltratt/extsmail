@@ -124,12 +124,6 @@ void obtain_lock(Conf *conf)
     atexit(lock_exit);
     signal(SIGINT, sigterm_trap);
     signal(SIGTERM, sigterm_trap);
-    
-    // In our context, SIGPIPE would occur when a write to a pipe fails, causing
-    // us to terminate. Therefore we ignore SIGPIPE's, which means that calls to
-    // write will return -1 if EPIPE occurs.
-    
-    signal(SIGPIPE, SIG_IGN);
 }
 
 
@@ -856,6 +850,12 @@ int main(int argc, char** argv)
     Group *groups = read_externals();
     
     obtain_lock(conf);
+
+    // In our context, SIGPIPE would occur when a write to a pipe fails, causing
+    // us to terminate. Therefore we ignore SIGPIPE's, which means that calls to
+    // write will return -1 if EPIPE occurs.
+    
+    signal(SIGPIPE, SIG_IGN);
 
     // Check that everything to do with the spool dir is OK.
 
