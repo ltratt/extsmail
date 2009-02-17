@@ -59,10 +59,10 @@ const char *EXTERNALS_PATHS[] = {"~/.extsmail/externals",
 #define LOCKFILE "extsmaild.lock"
 
 // Size of the initial header buffer (and also the size that it will be
-// incremented if it's not big enough).
+// incremented by if it's not big enough).
 #define HEADER_BUF 2048
 // Size of the initial stderr buffer (and also the size that it will be
-// incremented if it's not big enough).
+// incremented by if it's not big enough).
 #define STDERR_BUF_ALLOC 1024
 // Size of the initial buffer copying data from a message to the child
 // process.
@@ -322,7 +322,7 @@ bool cycle(Conf *conf, Group *groups)
                 break;
             }
 
-            // If the file is zero size which means that we managed to
+            // If the file is zero size it probably means that we managed to
             // interrupt extsmail before it had managed to obtain an
             // exclusive lock and write any data to the file. In such a case
             // we don't try and do anything; instead (below) we sleep a
@@ -593,18 +593,18 @@ next_group:
             }
 
             // Don't bother trying to use this external. This is an important
-            // optimisation: if a host is down, it can take quite a while for
-            // network connections to time out, so we don't want to continually
-            // retry something that already hasn't worked. On the next cycle,
-            // the "working" flag will be reset.
+            // optimisation if using ssh for exmaple: if a host is down, it can
+            // take quite a while for network connections to time out, so we
+            // don't want to continually retry something that already hasn't
+            // worked. On the next cycle, the "working" flag will be reset.
 
             cur_ext = cur_ext->next;
             continue;
         }
 
         // OK, we're now ready to invoke the sendmail command for this
-        // external. In order to do this, we fork, with the child process
-        // executing the sendmail command. We pipe the message into the
+        // external. In order to do this, we first fork, with the child process
+        // executing the sendmail command. We then pipe the message into the
         // sendmail process, and pipe stderr out from the child (so that we can
         // report errors to the user).
 
@@ -678,7 +678,7 @@ next_group:
                     ssize_t nr = read(fd, buf, PTOC_BUFLEN);
                     if (nr == 0) {
                         // It might look like we'd like to close(fd) now, but
-                        // it's still possible for things to go wrong and fd
+                        // it's still possible for things to go wrong, with fd
                         // needing to be tried again.
                         eof_fd = true;
                         close(pipeto[1]);
@@ -853,7 +853,8 @@ int main(int argc, char** argv)
 
     // In our context, SIGPIPE would occur when a write to a pipe fails, causing
     // us to terminate. Therefore we ignore SIGPIPE's, which means that calls to
-    // write will return -1 if EPIPE occurs.
+    // write will return -1 if EPIPE occurs. Why this isn't the default behaviour
+    // is anyone's guess.
     
     signal(SIGPIPE, SIG_IGN);
 
