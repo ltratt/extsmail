@@ -283,7 +283,6 @@ char *expand_path(const char *path)
     if (strncmp(path, HOME_PFX, strlen(HOME_PFX)) == 0) {
         struct passwd *pw_ent = getpwuid(geteuid());
         if (pw_ent == NULL) {
-            free(exp_path);
             return NULL;
         }
 
