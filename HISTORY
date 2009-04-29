@@ -2,7 +2,12 @@
   extsmail history
 ================================================================================
 
-  extsmail 1.0 (2008/01/05)
+  extsmail 1.1 (2009/04/29)
+
+* Fix two frees of possibly uninitialised pointers.
+
+
+  extsmail 1.0 (2009/01/05)
 
 * extsmaild's modes are now specified via the "-m <mode name>" switch. In
   particular the behaviour of the "-d" switch is now obtained with "-m daemon".
