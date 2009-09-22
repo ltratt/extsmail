@@ -52,10 +52,8 @@ bool set_entry(const char *, const char *);
 %token TSTRING
 
 
-
 %%
 
-%start start
 
 start : defns
       ;
@@ -66,7 +64,7 @@ defns : defn defns
     
 defn  : TID TASSIGN TSTRING
             {
-                if (!set_entry($1.str, $3.str))
+                if (!set_entry($<str>1, $<str>3))
                     YYABORT;
                 
                 free((void *) $<str>1);
