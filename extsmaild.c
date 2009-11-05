@@ -306,13 +306,10 @@ bool cycle(Conf *conf, Group *groups)
             }
 
             if (flock(fd, LOCK_EX | LOCK_NB) == -1) {
-                if (errno == EWOULDBLOCK)
-                    goto next;
+                if (errno != EWOULDBLOCK)
+                    syslog(LOG_ERR, "Error when flocking'ing '%s'", msg_path);
 
-                // For any other error than "would block", something's gone
-                // seriously wrong, so error'ing is a reasonable option.
-
-                err(1, "cycle: flock: when locking spool file %s", msg_path);
+                goto next;
             }
 
             // We've now got an exclusive lock on the file.
@@ -320,6 +317,8 @@ bool cycle(Conf *conf, Group *groups)
             if (fstat(fd, &msg_st) == -1) {
                 // If stat failed then something odd has happened and it's
                 // best to bail out for the time being.
+
+                syslog(LOG_ERR, "Error when fstat'ing '%s'", msg_path);
                 close(fd);
                 all_sent = false;
                 break;
