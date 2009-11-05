@@ -100,15 +100,6 @@ int try_conf_path(const char *path)
         free(cnd_path);
         return 1;
     }
-    
-    // Check that the user and group of the configuration file match the
-    // executing process.
-    if (conf_st.st_uid != geteuid() || conf_st.st_gid != getegid()) {
-        warnx("The user and / or group permissions of '%s' do not match the "
-          "executing user", path);
-        free(cnd_path);
-        return -1;
-    }
 
     yycin = fopen(cnd_path, "rt");
     if (yycin == NULL) {
