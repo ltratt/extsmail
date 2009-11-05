@@ -564,8 +564,8 @@ next_group:
         goto fail;
     }
 
-    // OK, at this point we've found a matching group for the message. We now
-    // go through each external in the group and try
+    // At this point we've found a matching group for the message. We now go
+    // through each external in the group and try to use it to send the message.
 
     External *cur_ext = group->externals;
     while (cur_ext != NULL) {
@@ -733,6 +733,7 @@ next_group:
             // For reasons that I don't pretend to understand, stderr messages
             // sometimes have random newline chars at the end of line - this loop
             // chomps them off.
+
             while (stderr_buf_len > 0 && (stderr_buf[stderr_buf_len - 1] == '\n'
               || stderr_buf[stderr_buf_len - 1] == '\r'))
                 stderr_buf_len -= 1;
