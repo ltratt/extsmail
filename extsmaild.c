@@ -309,6 +309,9 @@ bool cycle(Conf *conf, Group *groups)
                 if (errno == EWOULDBLOCK)
                     goto next;
 
+                // For any other error than "would block", something's gone
+                // seriously wrong, so error'ing is a reasonable option.
+
                 err(1, "cycle: flock: when locking spool file %s", msg_path);
             }
 
@@ -342,9 +345,9 @@ bool cycle(Conf *conf, Group *groups)
                 }
             }
 
-            close(fd);
-            
 next:
+            close(fd);
+
             // At this point, either we've released the exclusive lock we'd
             // previously gained (because we'd gained it before any data had
             // been written to the spool file) or we weren't able to gain the
