@@ -628,7 +628,7 @@ next_group:
             if (dup2(pipeto[0], STDIN_FILENO) == -1 || dup2(pipefrom[1],
               STDERR_FILENO) == -1) {
                 syslog(LOG_CRIT, "try_groups: dup2: %m");
-                exit(1);
+                goto fail;
             }
             close(pipeto[0]);
             close(pipeto[1]);
@@ -650,7 +650,7 @@ next_group:
 
             execvp(cur_ext->sendmail_argv[0], (char **const) sub_argv);
             syslog(LOG_CRIT, "try_groups: execvp: %m");
-            exit(1);
+            goto fail;
         }
         else {
             // Parent process.
