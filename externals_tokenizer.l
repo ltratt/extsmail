@@ -27,6 +27,7 @@
 #include <regex.h>
 #include <stdbool.h>
 #include <string.h>
+#include <time.h>
 
 #include "conf.h"
 #include "common.h"
