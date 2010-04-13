@@ -903,7 +903,7 @@ int main(int argc, char** argv)
         struct kevent events;
         EV_SET(&changes, smf, EVFILT_VNODE,
           EV_ADD | EV_ENABLE | EV_ONESHOT,
-          NOTE_DELETE | NOTE_WRITE | NOTE_EXTEND | NOTE_TRUNCATE | NOTE_ATTRIB
+          NOTE_DELETE | NOTE_WRITE | NOTE_EXTEND | NOTE_ATTRIB
           | NOTE_LINK | NOTE_RENAME | NOTE_REVOKE,
           0, 0);
 #elif HAVE_INOTIFY
