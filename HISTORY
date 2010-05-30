@@ -2,6 +2,15 @@
   extsmail history
 ================================================================================
 
+  extsmail 1.3 (2010/05/30)
+
+* OS X compile fixes.
+
+* Fix overly-restrictive configuration permissions check.
+
+* Recover gracefully from some errors that were previously fatal.
+
+
   extsmail 1.2 (2009/09/24)
 
 * Fix build error when using bison.
