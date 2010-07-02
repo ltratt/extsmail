@@ -107,7 +107,7 @@ void obtain_lock(Conf *conf)
     // a lock on it then we assume the lock file is stale and that there's no
     // running extsmaild.
 
-    if ((lock_fd = open(lock_path, O_CREAT | O_RDWR)) == -1) {
+    if ((lock_fd = open(lock_path, O_CREAT | O_RDWR, 0600)) == -1) {
         if (errno != EEXIST)
             err(1, "Unable to obtain lockfile '%s'", lock_path);
     }
@@ -116,8 +116,6 @@ void obtain_lock(Conf *conf)
         err(1, "Unable to obtain lockfile '%s'", lock_path);
     }
 
-    fchmod(lock_fd, S_IRUSR | S_IWUSR | S_IXUSR);
-    
     // Install an exit handler and signal trap so that, barring something going
     // catastrophically wrong, the lockfile is removed on exit.
     
