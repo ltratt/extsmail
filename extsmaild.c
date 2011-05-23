@@ -594,7 +594,7 @@ next_group:
             }
 
             // Don't bother trying to use this external. This is an important
-            // optimisation if using ssh for exmaple: if a host is down, it can
+            // optimisation if using ssh for example: if a host is down, it can
             // take quite a while for network connections to time out, so we
             // don't want to continually retry something that already hasn't
             // worked. On the next cycle, the "working" flag will be reset.
