@@ -280,10 +280,8 @@ char *expand_path(const char *path)
         if (asprintf(&exp_path, "%s%s%s", pw_ent->pw_dir, DIR_SEP, path + strlen(HOME_PFX)) == -1)
             errx(1, "expand_path: asprintf: unable to allocate memory");
     }
-    else {
-        if (asprintf(&exp_path, "%s", path) == -1)
-            errx(1, "expand_path: asprintf: unable to allocate memory");
-    }
+    else if (asprintf(&exp_path, "%s", path) == -1)
+        errx(1, "expand_path: asprintf: unable to allocate memory");
     
     return exp_path;
 }
