@@ -570,8 +570,9 @@ next_group:
         // but which hasn't previously been tried, then we set its 'last_success'
         // value to the current time so that timeouts are measured from the first
         // time it is used.
-        if (conf->mode == DAEMON_MODE && cur_ext->timeout != 0 &&
-          cur_ext->last_success == 0) {
+        if (conf->mode == DAEMON_MODE
+          && cur_ext->timeout != 0
+          && cur_ext->last_success == 0) {
             assert(cur_ext->working);
             cur_ext->last_success = time(NULL);
         }
@@ -731,7 +732,8 @@ next_group:
             // sometimes have random newline chars at the end of line - this loop
             // chomps them off.
 
-            while (stderr_buf_len > 0 && (stderr_buf[stderr_buf_len - 1] == '\n'
+            while (stderr_buf_len > 0
+              && (stderr_buf[stderr_buf_len - 1] == '\n'
               || stderr_buf[stderr_buf_len - 1] == '\r'))
                 stderr_buf_len -= 1;
 
@@ -790,8 +792,8 @@ next:
                 // timeout hasn't been exceeded, then we have to give up on
                 // trying to send this messages via this, or other, externals -
                 // we need to wait for the timeout to be exceeded.       
-                if (cur_ext->timeout != 0 &&
-                  cur_ext->last_success + cur_ext->timeout > time(NULL)) {
+                if (cur_ext->timeout != 0
+                  && cur_ext->last_success + cur_ext->timeout > time(NULL)) {
                     goto fail;
                 }
             }

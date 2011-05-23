@@ -108,9 +108,8 @@ int try_conf_path(const char *path)
     }
     free(cnd_path);
     
-    if (yycparse() != 0) {
+    if (yycparse() != 0)
         return -1;
-    }
     
     return 0;
 }
@@ -179,8 +178,8 @@ bool check_dir(const char *path)
 
     // 'path' must have owner only having rwx access.
     
-    if ((sd_st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXG)) !=
-      (S_IRUSR | S_IWUSR | S_IXUSR)) {
+    if ((sd_st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXG))
+      != (S_IRUSR | S_IWUSR | S_IXUSR)) {
         warnx("%s: Incorrect permissions (should be %.o)", path,
           S_IRUSR | S_IWUSR | S_IXUSR);
         return false;
@@ -273,9 +272,8 @@ char *expand_path(const char *path)
     // If path begins with "~/", we expand that to the users home directory.
     if (strncmp(path, HOME_PFX, strlen(HOME_PFX)) == 0) {
         struct passwd *pw_ent = getpwuid(geteuid());
-        if (pw_ent == NULL) {
+        if (pw_ent == NULL)
             return NULL;
-        }
 
         if (asprintf(&exp_path, "%s%s%s", pw_ent->pw_dir, DIR_SEP, path + strlen(HOME_PFX)) == -1)
             errx(1, "expand_path: asprintf: unable to allocate memory");

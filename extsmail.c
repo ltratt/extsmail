@@ -60,9 +60,8 @@ int main(int argc, char** argv)
     }
     
     int sfd;
-    if ((sfd = mkstemp(sp)) == -1) {
+    if ((sfd = mkstemp(sp)) == -1)
         err(1, "mkstemp: when creating spool file %s", sp);
-    }
     
     // We immediately try to gain an exclusive lock on the newly created spool
     // file. If, in between the spool file being created, and us gaining the
@@ -71,9 +70,8 @@ int main(int argc, char** argv)
     // then relinquish its lock, allowing us to gain it and write the file in
     // full.
     
-    if (flock(sfd, LOCK_EX) == -1) {
+    if (flock(sfd, LOCK_EX) == -1)
         err(1, "flock: when locking spool file %s", sp);
-    }
 
     // Open the spool file for writing. The format of the spool file is:
     //
@@ -85,9 +83,8 @@ int main(int argc, char** argv)
     //   6) The mail contents as read from stdin
     
     FILE *sf;
-    if ((sf = fdopen(sfd, "w")) == NULL) {
+    if ((sf = fdopen(sfd, "w")) == NULL)
         err(1, "main: fdopen");
-    }
 
 #   define SPOOL_WRITE(fmt, args...) if (fprintf(sf, fmt, ##args) == -1) \
         err(1, "%s: When writing to spool file", sp)
@@ -100,9 +97,8 @@ int main(int argc, char** argv)
 
     SPOOL_WRITE("%d\n", argc - 1);
     
-    for (int i = 1; i < argc; i += 1) {
+    for (int i = 1; i < argc; i += 1)
         SPOOL_WRITE("%zd\n%s\n", strlen(argv[i]), argv[i]);
-    }
 
 #   define BUF_SIZE 1024
 
@@ -110,9 +106,9 @@ int main(int argc, char** argv)
     size_t total_nr = 0; // All bytes read from stdin.
     while (1) {
         size_t nr; // Number of bytes read
-        if ((nr = fread(buf, 1, BUF_SIZE, stdin)) < BUF_SIZE) {
-            if (ferror(stdin))
-                errx(1, "main: ferror");
+        if ((nr = fread(buf, 1, BUF_SIZE, stdin)) < BUF_SIZE
+          && ferror(stdin)) {
+            errx(1, "main: ferror");
         }
 
         if (fwrite(buf, 1, nr, sf) < nr)
