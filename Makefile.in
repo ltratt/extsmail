@@ -1,11 +1,3 @@
-.SUFFIXES: .1 .5 .cat1 .cat5
-
-.1.cat1:
-	nroff -mandoc $< > $@
-
-.5.cat5:
-	nroff -mandoc $< > $@
-
 CC=@CC@
 CFLAGS=@CFLAGS@
 LIBS=@LIBS@
@@ -15,7 +7,7 @@ bindir = @bindir@
 INSTALL = @INSTALL@
 
 
-all: extsmail extsmaild man
+all: extsmail extsmaild
 
 
 EXTSMAIL_OBJS = conf_parser.tab.o conf_tokenizer.o extsmail.o common.o
@@ -47,22 +39,17 @@ externals_tokenizer.c: externals_tokenizer.l
 	lex -Pyye -oexternals_tokenizer.c externals_tokenizer.l
 
 
-MAN_PAGES = extsmail.cat1 extsmail.conf.cat5 extsmail.externals.cat5 extsmaild.cat1
-
-man: ${MAN_PAGES}
-
-
 install: all
 	install -d ${DESTDIR}${bindir}
 	install -c -m 555 extsmail ${DESTDIR}${bindir}
 	install -c -m 555 extsmaild ${DESTDIR}${bindir}
 	install -d ${DESTDIR}${prefix}/man/cat1
-	install -c -m 444 extsmail.cat1 ${DESTDIR}${prefix}/man/cat1/extsmail.0
-	install -c -m 444 extsmail.conf.cat5 \
-	  ${DESTDIR}${prefix}/man/cat5/extsmail.conf.0
-	install -c -m 444 extsmail.externals.cat5 \
-      ${DESTDIR}${prefix}/man/cat5/extsmail.externals.0
-	install -c -m 444 extsmaild.cat1 ${DESTDIR}${prefix}/man/cat1/extsmaild.0
+	install -c -m 444 extsmail.1 ${DESTDIR}${prefix}/man/man1/extsmail.1
+	install -c -m 444 extsmail.conf.5 \
+	  ${DESTDIR}${prefix}/man/man5/extsmail.conf.5
+	install -c -m 444 extsmail.externals.5 \
+      ${DESTDIR}${prefix}/man/man5/extsmail.externals.5
+	install -c -m 444 extsmaild.1 ${DESTDIR}${prefix}/man/man1/extsmaild.1
 
 
 clean:
@@ -73,8 +60,7 @@ clean:
 
 distclean: clean
 	rm -rf configure Makefile Config.h Config.h.in autom4te.cache config.log \
-	  config.status extsmail.cat1 extsmail.conf.cat1 extsmail.externals.cat1 \
-	  extsmaild.cat1
+	  config.status
 
 
 distrib:

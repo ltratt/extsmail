@@ -14,7 +14,3 @@ externals_parser.tab.h
 externals_tokenizer.c
 extsmail
 extsmaild
-extsmail.cat1
-extsmail.conf.cat5
-extsmail.externals.cat5
-extsmaild.cat1
