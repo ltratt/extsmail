@@ -81,5 +81,5 @@ distrib:
 	${MAKE} distclean
 	${MAKE} -f Makefile.bootstrap
 	@read v?'extsmail version: '; mkdir extsmail-$$v; \
-          cp `ls | grep -E -v "(autom4te.cache)|(configure.in)|(Makefile.bootstrap)|(extsmail-$$v)"` extsmail-$$v; \
-          tar cfz extsmail-$$v.tar.gz extsmail-$$v; rm -rf extsmail-$$v
+      cp `ls | grep -E -v "(autom4te.cache)|(configure.in)|(Makefile.bootstrap)|(extsmail-$$v)"` extsmail-$$v; \
+      tar cfz extsmail-$$v.tar.gz extsmail-$$v; rm -rf extsmail-$$v
