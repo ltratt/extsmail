@@ -1,6 +1,9 @@
-.SUFFIXES: .1 .cat1
+.SUFFIXES: .1 .5 .cat1 .cat5
 
 .1.cat1:
+	nroff -mandoc $< > $@
+
+.5.cat5:
 	nroff -mandoc $< > $@
 
 CC=@CC@
@@ -44,7 +47,7 @@ externals_tokenizer.c: externals_tokenizer.l
 	lex -Pyye -oexternals_tokenizer.c externals_tokenizer.l
 
 
-MAN_PAGES = extsmail.cat1 extsmail.conf.cat1 extsmail.externals.cat1 extsmaild.cat1
+MAN_PAGES = extsmail.cat1 extsmail.conf.cat5 extsmail.externals.cat5 extsmaild.cat1
 
 man: ${MAN_PAGES}
 
@@ -55,10 +58,10 @@ install: all
 	install -c -m 555 extsmaild ${DESTDIR}${bindir}
 	install -d ${DESTDIR}${prefix}/man/cat1
 	install -c -m 444 extsmail.cat1 ${DESTDIR}${prefix}/man/cat1/extsmail.0
-	install -c -m 444 extsmail.conf.cat1 \
-	  ${DESTDIR}${prefix}/man/cat1/extsmail.conf.0
-	install -c -m 444 extsmail.externals.cat1 \
-      ${DESTDIR}${prefix}/man/cat1/extsmail.externals.0
+	install -c -m 444 extsmail.conf.cat5 \
+	  ${DESTDIR}${prefix}/man/cat5/extsmail.conf.0
+	install -c -m 444 extsmail.externals.cat5 \
+      ${DESTDIR}${prefix}/man/cat5/extsmail.externals.0
 	install -c -m 444 extsmaild.cat1 ${DESTDIR}${prefix}/man/cat1/extsmaild.0
 
 
