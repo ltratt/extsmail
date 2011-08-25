@@ -444,7 +444,7 @@ bool try_groups(Conf *conf, Group *groups, const char *msg_path, int fd)
     
     off_t mf_body_off = lseek(fd, 0, SEEK_CUR);
     if (mf_body_off == -1) {
-        syslog(LOG_ERR, "Error when ftell'ing from '%s'", msg_path);
+        syslog(LOG_ERR, "Error when lseek'ing from '%s'", msg_path);
         goto preheaderfail;
     }
 
