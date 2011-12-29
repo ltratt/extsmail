@@ -43,7 +43,8 @@ install: all
 	install -d ${DESTDIR}${bindir}
 	install -c -m 555 extsmail ${DESTDIR}${bindir}
 	install -c -m 555 extsmaild ${DESTDIR}${bindir}
-	install -d ${DESTDIR}${prefix}/man/cat1
+	install -d ${DESTDIR}${prefix}/man/man1
+	install -d ${DESTDIR}${prefix}/man/man5
 	install -c -m 444 extsmail.1 ${DESTDIR}${prefix}/man/man1/extsmail.1
 	install -c -m 444 extsmail.conf.5 \
 	  ${DESTDIR}${prefix}/man/man5/extsmail.conf.5
