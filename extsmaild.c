@@ -75,11 +75,21 @@ const char *EXTERNALS_PATHS[] = {"~/.extsmail/externals",
 #   define INOTIFY_BUFLEN ((sizeof(struct inotify_event)+FILENAME_MAX)*1024)
 #endif
 
+
+typedef struct {
+    long spool_loc;      // The next entry number in the spool dir to try.
+    bool any_failure;    // Set to true if any message in the spool dir was not
+                         // sent. Reset on each cycle
+    time_t last_success; // The time of the last successful send of all
+                         // messages. Not yet used.
+} Status;
+
+
 extern char* __progname;
 
 Group *read_externals(void);
 int try_externals_path(const char *);
-bool cycle(Conf *conf, Group *groups);
+bool cycle(Conf *conf, Group *groups, Status *status);
 bool try_groups(Conf *, Group *, const char *, int);
 
 
@@ -240,7 +250,7 @@ int try_externals_path(const char *path)
 // one message failed to be succesfully sent.
 //
 
-bool cycle(Conf *conf, Group *groups)
+bool cycle(Conf *conf, Group *groups, Status *status)
 {
     char *msgs_path; // msgs dir (within spool dir)
     if (asprintf(&msgs_path, "%s%s%s", conf->spool_dir, DIR_SEP, MSGS_DIR)
@@ -255,6 +265,44 @@ bool cycle(Conf *conf, Group *groups)
         return false;
     }
     
+    if (conf->mode == DAEMON_MODE) {
+        // In daemon mode, we try to make sure we don't get "stuck" on the same
+        // message. For example, if a message is too big to be sent by the
+        // remote sendmail, it could stop us trying to send other messages which
+        // might be successful. So, on each cycle, we try starting one entry
+        // further into the spool dir. In other words if we have entries:
+        //   a, b, c
+        // in the spool dir then we will try sending them in this order upon
+        // each cycle (until some are actually sent):
+        //   1: a, b, c
+        //   2: b, c, a
+        //   3: c, a, b
+
+        // Skip the entries we tried on the last iteration.
+        for (int i = 0; i < status->spool_loc; i += 1) {
+            errno = 0;
+            if (readdir(dirp) == NULL) {
+                // We've hit the end of the directory; it probably means that we
+                // managed to send some messages on the last iteration.
+                status->spool_loc = 0;
+                if (errno == 0) {
+                    rewinddir(dirp);
+                    break;
+                }
+                else {
+                    // Something odd happened, and it's not obvious what we could
+                    // do to recover. We're best off starting afresh in the next
+                    // cycle.
+                    closedir(dirp);
+                    free(msgs_path);
+                    return false;
+                }
+            }
+        }
+    }
+    long start_spool_loc, spool_loc;
+    start_spool_loc = spool_loc = status->spool_loc;
+    
     // Reset all the externals "working" status so that we'll try all of them
     // again.
     
@@ -268,25 +316,52 @@ bool cycle(Conf *conf, Group *groups)
         cur_group = cur_group->next;
     }
     
-    int all_sent = true;
+    bool all_sent = true;
+    bool tried_once = false; // Make sure we read every entry at least once.
     while (1) {
+        char *msg_path = NULL;
+
         errno = 0;
         struct dirent *dp = readdir(dirp);
         if (dp == NULL) {
             if (errno == 0) {
-                // We've read all the directory entries.
+                if (conf->mode == DAEMON_MODE) {
+                    // We've got to the end of the directory.
+                    
+                    if (tried_once && start_spool_loc == 0) {
+                        // We started this cycle from the start of the directory,
+                        // so we can now be sure that we've read everything.
+                        break;
+                    }
+                    else if (!tried_once) {
+                        // We haven't read any entries, but we've already read
+                        // past the end of the directory. We reset the directory
+                        // read to the start and carry on as if we'd always
+                        // intended to start from the beginning of the
+                        // directory.
+                        start_spool_loc = status->spool_loc = 0;
+                    }
+                        
+                    // There could be entries between seekdir(0) and
+                    // seekdir(status->spool_loc) that we haven't yet tried to
+                    // send, so rewind to make sure we have a chance of trying
+                    // then.
+                    rewinddir(dirp);
+                    spool_loc = 0;
+                    continue;
+                }
+            }
+            else {
+                all_sent = false;
                 break;
             }
-            else
-                syslog(LOG_ERR, "When scanning spool dir: %m");
         }
 
         // The entries "." and ".." are, fairly obviously, not messages.
 
         if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0)
-            continue;
+            goto next_msg;
 
-        char *msg_path;
         if (asprintf(&msg_path, "%s%s%s%s%s", conf->spool_dir, DIR_SEP,
           MSGS_DIR, DIR_SEP, dp->d_name) == -1) {
             syslog(LOG_CRIT, "cycle: asprintf: unable to allocate memory");
@@ -297,29 +372,25 @@ bool cycle(Conf *conf, Group *groups)
         while (1) {
             int fd = open(msg_path, O_RDONLY);
             if (fd == -1) {
-                // If we couldn't so much as open the file, something odd has
+                // If we couldn't so much as open the file - something odd has
                 // happened.
-                all_sent = false;
-                break;
+                goto next_try;
             }
 
             if (flock(fd, LOCK_EX | LOCK_NB) == -1) {
                 if (errno != EWOULDBLOCK)
                     syslog(LOG_ERR, "Error when flocking'ing '%s'", msg_path);
 
-                goto next;
+                close(fd);
+                goto next_try;
             }
 
             // We've now got an exclusive lock on the file.
             struct stat msg_st;
             if (fstat(fd, &msg_st) == -1) {
-                // If stat failed then something odd has happened and it's
-                // best to bail out for the time being.
-
                 syslog(LOG_ERR, "Error when fstat'ing '%s'", msg_path);
                 close(fd);
-                all_sent = false;
-                break;
+                goto next_try;
             }
 
             // If the file is zero size it probably means that we managed to
@@ -330,21 +401,20 @@ bool cycle(Conf *conf, Group *groups)
             // assume that extsmail will have finished with a file in at
             // most a couple of seconds (and probably much less).
 
-            if (msg_st.st_size > 0) {
-                if (try_groups(conf, groups, msg_path, fd)) {
-                    close(fd);
-                    break;
-                }
-                else {
-                    all_sent = false;
-                    close(fd);
-                    break;
-                }
+            if (msg_st.st_size == 0) {
+                close(fd);
+                goto next_try;
             }
 
-next:
-            close(fd);
+            if (try_groups(conf, groups, msg_path, fd))
+                break;
 
+            // The send failed for whatever reason. Give up for the time being.
+            all_sent = false;
+            close(fd);
+            break;
+
+next_try:
             // At this point, either we've released the exclusive lock we'd
             // previously gained (because we'd gained it before any data had
             // been written to the spool file) or we weren't able to gain the
@@ -358,12 +428,40 @@ next:
             }
             sleep(1);
         }
-        
-        free(msg_path);
+
+        if (!all_sent) {
+            status->spool_loc = spool_loc + 1;
+            if (msg_path)
+                free(msg_path);
+            break;
+        }
+
+next_msg:
+        if (msg_path)
+            free(msg_path);
+
+        if (conf->mode == DAEMON_MODE) {
+            if (tried_once && spool_loc == start_spool_loc) {
+                // We've read all the directory entries at least once.
+                break;
+            }
+            spool_loc += 1;
+            tried_once = true;
+        }
     }
 
     closedir(dirp);
     free(msgs_path);
+    
+    if (conf->mode == DAEMON_MODE) {
+        if (all_sent) {
+            status->spool_loc = 0;
+            status->any_failure = false;
+            status->last_success = time(NULL);
+        }
+        else
+            status->any_failure = true;
+    }
 
     return all_sent;
 }
@@ -867,6 +965,11 @@ int main(int argc, char** argv)
     if (!check_spool_dir(conf))
         exit(1);
 
+    Status status;
+    status.spool_loc = 0;
+    status.any_failure = false;
+    status.last_success = time(NULL);
+
     if (mode == DAEMON_MODE) {
         daemon(1, 0);
         
@@ -923,7 +1026,7 @@ int main(int argc, char** argv)
         openlog(__progname, LOG_CONS, LOG_MAIL);
 
         while (1) {
-            cycle(conf, groups);
+            cycle(conf, groups, &status);
 
             // On platforms that support an appropriate mechanism (such as kqueue
             // or inotify), we try and send messages as soon as we notice changes
@@ -963,7 +1066,7 @@ int main(int argc, char** argv)
 
         openlog(__progname, LOG_PERROR, LOG_MAIL);
 
-        if (!cycle(conf, groups)) {
+        if (!cycle(conf, groups, &status)) {
             closelog();
             return 1;
         }
