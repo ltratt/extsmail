@@ -24,4 +24,8 @@ typedef enum {BATCH_MODE, DAEMON_MODE} Mode;
 typedef struct {
 	const char *spool_dir;
     Mode mode;
+    time_t notify_interval; // How many seconds should mail not be sent before
+                            // notify_cmd should be executed. If set to 0, means
+                            // that notify_cmd sholud never be executed.
+    const char *notify_cmd; // The command to be executed by system(3).
 } Conf;

@@ -81,7 +81,9 @@ typedef struct {
     bool any_failure;    // Set to true if any message in the spool dir was not
                          // sent. Reset on each cycle
     time_t last_success; // The time of the last successful send of all
-                         // messages. Not yet used.
+                         // messages.
+    time_t last_notify;  // The time of the last notify / last successful send.
+                         // Note this always >= last_success.
 } Status;
 
 
@@ -89,8 +91,9 @@ extern char* __progname;
 
 Group *read_externals(void);
 int try_externals_path(const char *);
-bool cycle(Conf *conf, Group *groups, Status *status);
+bool cycle(Conf *, Group *, Status *);
 bool try_groups(Conf *, Group *, const char *, int);
+void do_notify_cmd(Conf *, Status *);
 
 
 
@@ -457,7 +460,7 @@ next_msg:
         if (all_sent) {
             status->spool_loc = 0;
             status->any_failure = false;
-            status->last_success = time(NULL);
+            status->last_success = status->last_notify = time(NULL);
         }
         else
             status->any_failure = true;
@@ -913,6 +916,32 @@ preheaderfail:
 
 
 
+void do_notify_cmd(Conf *conf, Status *status)
+{
+    assert(conf->notify_interval > 0);
+
+    if (conf->notify_cmd == NULL)
+        return;
+
+    char *time_fmted;
+    time_t diff = time(NULL) - status->last_success;
+    if (diff < 60)
+        asprintf(&time_fmted, "%d seconds", diff);
+    else if (diff < 60 * 60)
+        asprintf(&time_fmted, "%d minutes", diff / 60);
+    else if (diff < 60 * 60 * 24)
+        asprintf(&time_fmted, "%d hours %d minutes", diff / (60 * 60), (diff / 60) % 60);
+    else
+        asprintf(&time_fmted, "%d days %d hours", diff / (60 * 60 * 24), (diff / (60 * 60)) % 24);
+
+    char *cmd = str_replace(conf->notify_cmd, "${TIME}", time_fmted);
+    system(cmd);
+    free(time_fmted);
+    free(cmd);
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // main
 //
@@ -968,7 +997,7 @@ int main(int argc, char** argv)
     Status status;
     status.spool_loc = 0;
     status.any_failure = false;
-    status.last_success = time(NULL);
+    status.last_success = status.last_notify = time(NULL);
 
     if (mode == DAEMON_MODE) {
         daemon(1, 0);
@@ -1026,7 +1055,13 @@ int main(int argc, char** argv)
         openlog(__progname, LOG_CONS, LOG_MAIL);
 
         while (1) {
-            cycle(conf, groups, &status);
+            bool success = cycle(conf, groups, &status);
+
+            if (!success && conf->notify_interval > 0
+              && time(NULL) > status.last_notify + conf->notify_interval) {
+                do_notify_cmd(conf, &status);
+                status.last_notify = time(NULL);
+            }
 
             // On platforms that support an appropriate mechanism (such as kqueue
             // or inotify), we try and send messages as soon as we notice changes

@@ -31,3 +31,4 @@ char *rdline(FILE *);
 char *fdrdline(int);
 char *expand_path(const char *);
 char *mk_str(char *);
+char *str_replace(const char *, const char *, const char *);

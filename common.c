@@ -63,6 +63,8 @@ Conf *read_conf()
 {
     conf = malloc(sizeof(Conf));
     conf->spool_dir = NULL;
+    conf->notify_interval = 0;
+    conf->notify_cmd = NULL;
 
     int i;
     for (i = 0; CONF_PATHS[i] != NULL; i += 1) {
@@ -292,4 +294,39 @@ char *mk_str(char *str)
     memmove(buf, str, strlen(str) + 1);
     
     return buf;
+}
+
+
+
+char *str_replace(const char *str, const char *old, const char *new)
+{
+    size_t new_size = 0, i = 0;
+    while (i < strlen(str)) {
+        if (i < strlen(str) - strlen(old)
+          && memcmp(str + i, old, strlen(old)) == 0) {
+            i += strlen(old);
+            new_size += strlen(new);
+        }
+        else {
+            new_size += 1;
+            i += 1;
+        }
+    }
+    
+    char *new_str = malloc(new_size + 1);
+    i = 0;
+    size_t j = 0;
+    while (i < strlen(str)) {
+        if (i < strlen(str) - strlen(old)
+          && memcmp(str + i, old, strlen(old)) == 0) {
+            memmove(new_str + j, new, strlen(new));
+            i += strlen(old);
+            j += strlen(new);
+        }
+        else
+            new_str[j++] = str[i++];
+    }
+    new_str[new_size] = 0;
+    
+    return new_str;
 }

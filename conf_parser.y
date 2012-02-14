@@ -45,32 +45,59 @@ bool set_entry(const char *, const char *);
 
 %union {
     const char *str;
+    time_t time;
 }
 
 %token TASSIGN
 %token TID
 %token TSTRING
+%token TTIME
 
 
 %%
 
 
 start : defns
-      ;
+    ;
 
 defns : defn defns
-      | defn
-      ;
+    | defn
+    ;
     
 defn  : TID TASSIGN TSTRING
-            {
-                if (!set_entry($<str>1, $<str>3))
+        {
+            if (strcmp($<str>1, "spool_dir") == 0) {
+                conf->spool_dir = expand_path($<str>3);
+                if (conf->spool_dir == NULL) {
+                    warnx("Unable to expand path '%s'", $<str>3);
                     YYABORT;
-                
-                free((void *) $<str>1);
+                }
                 free((void *) $<str>3);
             }
-      ;
+            else if (strcmp($<str>1, "notify_cmd") == 0) {
+                conf->notify_cmd = $<str>3;
+            }
+            else {
+                warn_var($<str>1);
+            free((void *) $<str>3);
+                YYABORT;
+            }
+
+            free((void *) $<str>1);
+        }
+    | TID TASSIGN TTIME
+        {
+            if (strcmp($<str>1, "notify_interval") == 0) {
+                conf->notify_interval = $<time>3;
+            }
+            else {
+                warn_var($<str>1);
+                YYABORT;
+            }
+
+            free((void *) $<str>1);
+        }
+    ;
 
 
 
@@ -90,22 +117,13 @@ int yycwrap()
 
 
 
-bool set_entry(const char *id, const char *val)
+void warn_var(const char *id)
 {
-    if (strcmp(id, "spool_dir") == 0) {
-        if (conf->spool_dir != NULL) {
-            warnx("Multiple definitions of '%s'", id);
-            return false;
-        }
-        
-        conf->spool_dir = expand_path(val);
-        if (conf->spool_dir == NULL)
-            return false;
+    if (strcmp(id, "spool_dir") == 0
+      || strcmp(id, "notify_interval") == 0
+      ||  strcmp(id, "notify_cmd") == 0) {
+        warnx("Value of incorrect type for '%s'", id);
     }
-    else {
+    else
         warnx("Unknown conf var '%s'", id);
-        return false;
-    }
-    
-    return true;
 }
