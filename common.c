@@ -63,8 +63,9 @@ Conf *read_conf()
 {
     conf = malloc(sizeof(Conf));
     conf->spool_dir = NULL;
-    conf->notify_interval = 0;
-    conf->notify_cmd = NULL;
+    conf->notify_failure_interval = 0;
+    conf->notify_failure_cmd = NULL;
+    conf->notify_success_cmd = NULL;
 
     int i;
     for (i = 0; CONF_PATHS[i] != NULL; i += 1) {

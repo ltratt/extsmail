@@ -82,7 +82,7 @@ typedef struct {
                          // sent. Reset on each cycle
     time_t last_success; // The time of the last successful send of all
                          // messages.
-    time_t last_notify;  // The time of the last notify / last successful send.
+    time_t last_notify_failure; // The time of the last notification of failure.
                          // Note this always >= last_success.
 } Status;
 
@@ -93,7 +93,8 @@ Group *read_externals(void);
 int try_externals_path(const char *);
 bool cycle(Conf *, Group *, Status *);
 bool try_groups(Conf *, Group *, const char *, int);
-void do_notify_cmd(Conf *, Status *);
+void do_notify_failure_cmd(Conf *, Status *);
+void do_notify_success_cmd(Conf *, Status *, int);
 
 
 
@@ -321,6 +322,7 @@ bool cycle(Conf *conf, Group *groups, Status *status)
     
     bool all_sent = true;
     bool tried_once = false; // Make sure we read every entry at least once.
+    int num_successes = 0;   // How many messages have been successfully sent.
     while (1) {
         char *msg_path = NULL;
 
@@ -409,8 +411,10 @@ bool cycle(Conf *conf, Group *groups, Status *status)
                 goto next_try;
             }
 
-            if (try_groups(conf, groups, msg_path, fd))
+            if (try_groups(conf, groups, msg_path, fd)) {
+                num_successes += 1;
                 break;
+            }
 
             // The send failed for whatever reason. Give up for the time being.
             all_sent = false;
@@ -460,10 +464,13 @@ next_msg:
         if (all_sent) {
             status->spool_loc = 0;
             status->any_failure = false;
-            status->last_success = status->last_notify = time(NULL);
+            status->last_success = status->last_notify_failure = time(NULL);
         }
         else
             status->any_failure = true;
+
+        if (num_successes > 0)
+            do_notify_success_cmd(conf, status, num_successes);
     }
 
     return all_sent;
@@ -916,11 +923,11 @@ preheaderfail:
 
 
 
-void do_notify_cmd(Conf *conf, Status *status)
+void do_notify_failure_cmd(Conf *conf, Status *status)
 {
-    assert(conf->notify_interval > 0);
+    assert(conf->notify_failure_interval > 0);
 
-    if (conf->notify_cmd == NULL)
+    if (conf->notify_failure_cmd == NULL)
         return;
 
     char *time_fmted;
@@ -934,9 +941,25 @@ void do_notify_cmd(Conf *conf, Status *status)
     else
         asprintf(&time_fmted, "%d days %d hours", diff / (60 * 60 * 24), (diff / (60 * 60)) % 24);
 
-    char *cmd = str_replace(conf->notify_cmd, "${TIME}", time_fmted);
+    char *cmd = str_replace(conf->notify_failure_cmd, "${TIME}", time_fmted);
     system(cmd);
     free(time_fmted);
+    free(cmd);
+}
+
+
+
+void do_notify_success_cmd(Conf *conf, Status *status, int num_successes)
+{
+    if (conf->notify_success_cmd == NULL)
+        return;
+
+    char *successes_str;
+    asprintf(&successes_str, "%d", num_successes);
+
+    char *cmd = str_replace(conf->notify_success_cmd, "${SUCCESSES}", successes_str);
+    system(cmd);
+    free(successes_str);
     free(cmd);
 }
 
@@ -997,7 +1020,7 @@ int main(int argc, char** argv)
     Status status;
     status.spool_loc = 0;
     status.any_failure = false;
-    status.last_success = status.last_notify = time(NULL);
+    status.last_success = status.last_notify_failure = time(NULL);
 
     if (mode == DAEMON_MODE) {
         daemon(1, 0);
@@ -1057,10 +1080,11 @@ int main(int argc, char** argv)
         while (1) {
             bool success = cycle(conf, groups, &status);
 
-            if (!success && conf->notify_interval > 0
-              && time(NULL) > status.last_notify + conf->notify_interval) {
-                do_notify_cmd(conf, &status);
-                status.last_notify = time(NULL);
+            if (!success && conf->notify_failure_interval > 0
+              && time(NULL) >
+              status.last_notify_failure + conf->notify_failure_interval) {
+                do_notify_failure_cmd(conf, &status);
+                status.last_notify_failure = time(NULL);
             }
 
             // On platforms that support an appropriate mechanism (such as kqueue

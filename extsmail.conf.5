@@ -39,7 +39,7 @@ Sets the location of the spool directory used by
 and
 .Xr extsmaild 1 .
 This is the only variable which must be set in every configuration file.
-.It notify_interval
+.It notify_failure_interval
 Specifies how often notifications of unsucessful deliveries should be made.
 If unspecified, or set to 0, notifications will never be made. Times are
 specified as a number followed by
@@ -51,9 +51,9 @@ specified as a number followed by
 (minutes), or 
 .Em s
 (seconds).
-.It notify_cmd
+.It notify_failure_cmd
 The shell command to be executed when
-.Em notify_interval
+.Em notify_failure_interval
 seconds / minutes / hours / days have elapsed since the last fully
 successful send cycle. If the string
 .Em ${TIME}
@@ -65,6 +65,14 @@ Note that no security checking is (or can be) done on the command, so this
 option should be used with caution if a single configuration file serves
 multiple users. Please check the warnings that come with
 .Xr system 3 .
+.It notify_success_cmd
+The shell command to be executed when 1 or more messages have been successfully
+sent. If the string
+.Em ${SUCCESSES}
+exists in the command, it is replaced with a string representing the number of
+successfully sent messages. The same warnings that apply to
+.Em notify_failure_cmd
+also apply to this command.
 .El
 .Sh FILES
 The
@@ -91,10 +99,13 @@ spool_dir = "~/somewhere"
 A more complex configuration looks as follows:
 .Bd -literal -offset indent
 spool_dir = "~/somewhere"
-notify_interval = 30m
-notify_cmd = "echo 'extsmaild: ${TIME} since a fully successful
-  send cycle' | osd_cat -Acenter -f'-*-*-*-*-*-*-24'
-  -cgreen -pbottom -s1 -d 10 -"
+notify_failure_interval = 30m
+notify_failure_cmd = "echo 'extsmaild: ${TIME} since a fully
+  successful send cycle' | osd_cat -Acenter -cgreen -pbottom
+  -s1 -f'-*-*-*-*-*-*-24' -d 10 -"
+notify_success_cmd = "echo 'extsmaild: ${SUCCESSES} messages
+  successfully sent' | osd_cat -Acenter -cgreen -pbottom
+  -s1 -f'-adobe-helvetica-*-*-*-*-24' -d 3 -"
 .Ed
 .Sh SEE ALSO
 .Xr extsmail 1 ,

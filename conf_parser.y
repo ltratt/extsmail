@@ -74,8 +74,11 @@ defn  : TID TASSIGN TSTRING
                 }
                 free((void *) $<str>3);
             }
-            else if (strcmp($<str>1, "notify_cmd") == 0) {
-                conf->notify_cmd = $<str>3;
+            else if (strcmp($<str>1, "notify_failure_cmd") == 0) {
+                conf->notify_failure_cmd = $<str>3;
+            }
+            else if (strcmp($<str>1, "notify_success_cmd") == 0) {
+                conf->notify_success_cmd = $<str>3;
             }
             else {
                 warn_var($<str>1);
@@ -87,8 +90,8 @@ defn  : TID TASSIGN TSTRING
         }
     | TID TASSIGN TTIME
         {
-            if (strcmp($<str>1, "notify_interval") == 0) {
-                conf->notify_interval = $<time>3;
+            if (strcmp($<str>1, "notify_failure_interval") == 0) {
+                conf->notify_failure_interval = $<time>3;
             }
             else {
                 warn_var($<str>1);
@@ -120,8 +123,9 @@ int yycwrap()
 void warn_var(const char *id)
 {
     if (strcmp(id, "spool_dir") == 0
-      || strcmp(id, "notify_interval") == 0
-      ||  strcmp(id, "notify_cmd") == 0) {
+      || strcmp(id, "notify_failure_interval") == 0
+      ||  strcmp(id, "notify_failure_cmd") == 0
+      ||  strcmp(id, "notify_success_cmd") == 0) {
         warnx("Value of incorrect type for '%s'", id);
     }
     else
