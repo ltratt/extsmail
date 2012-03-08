@@ -346,6 +346,17 @@ bool cycle(Conf *conf, Group *groups, Status *status)
                         // directory.
                         start_spool_loc = status->spool_loc = 0;
                     }
+                    else if (start_spool_loc > spool_loc) {
+                        // Entries have been removed from the directory during
+                        // the cycle (probably because we've sent messages
+                        // successfully, but maybe because of user interaction).
+                        // We reset the directory read to the start, in case
+                        // files were present earlier in the readdir that we
+                        // never tried, or new files have been added in the
+                        // interim.
+                        start_spool_loc = status->spool_loc = 0;
+                        tried_once = false;
+                    }
                         
                     // There could be entries between seekdir(0) and
                     // seekdir(status->spool_loc) that we haven't yet tried to
