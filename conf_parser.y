@@ -39,6 +39,7 @@ extern Conf *conf;
 char *expand_path(const char *);
 
 bool set_entry(const char *, const char *);
+void warn_var(const char *);
 
 
 %}
