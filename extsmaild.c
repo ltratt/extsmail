@@ -32,6 +32,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/file.h>
 #include <sys/stat.h>
@@ -942,20 +943,26 @@ void do_notify_failure_cmd(Conf *conf, Status *status)
         return;
 
     char *time_fmted;
-    time_t diff = time(NULL) - status->last_success;
+    uintmax_t diff = time(NULL) - status->last_success;
+    int r;
     if (diff < 60)
-        asprintf(&time_fmted, "%d seconds", diff);
+        r = asprintf(&time_fmted, "%ju seconds", diff);
     else if (diff < 60 * 60)
-        asprintf(&time_fmted, "%d minutes", diff / 60);
+        r = asprintf(&time_fmted, "%ju minutes", diff / 60);
     else if (diff < 60 * 60 * 24)
-        asprintf(&time_fmted, "%d hours %d minutes", diff / (60 * 60), (diff / 60) % 60);
+        r = asprintf(&time_fmted, "%ju hours %ju minutes", diff / (60 * 60), (diff / 60) % 60);
     else
-        asprintf(&time_fmted, "%d days %d hours", diff / (60 * 60 * 24), (diff / (60 * 60)) % 24);
+        r = asprintf(&time_fmted, "%ju days %ju hours", diff / (60 * 60 * 24), (diff / (60 * 60)) % 24);
+
+    if (r == -1) {
+        // The asprintf call (whichever one it was) failed.
+        return;
+    }
 
     char *cmd = str_replace(conf->notify_failure_cmd, "${TIME}", time_fmted);
     system(cmd);
-    free(time_fmted);
     free(cmd);
+    free(time_fmted);
 }
 
 
@@ -966,7 +973,8 @@ void do_notify_success_cmd(Conf *conf, Status *status, int num_successes)
         return;
 
     char *successes_str;
-    asprintf(&successes_str, "%d", num_successes);
+    if (asprintf(&successes_str, "%d", num_successes) == -1)
+        return;
 
     char *cmd = str_replace(conf->notify_success_cmd, "${SUCCESSES}", successes_str);
     system(cmd);
