@@ -26,6 +26,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "conf.h"
 #include "conf_parser.tab.h"
