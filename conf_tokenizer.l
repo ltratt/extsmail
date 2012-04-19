@@ -35,6 +35,8 @@ char *mk_str(char *);
 %}
 
 
+%option nounput
+
 
 %%
 
