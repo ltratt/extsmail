@@ -367,6 +367,8 @@ bool cycle(Conf *conf, Group *groups, Status *status)
                     spool_loc = 0;
                     continue;
                 }
+                else
+                    break;
             }
             else {
                 all_sent = false;
