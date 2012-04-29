@@ -68,8 +68,11 @@ const char *EXTERNALS_PATHS[] = {"~/.extsmail/externals",
 // Size of the initial buffer copying data from a message to the child
 // process.
 #define PTOC_BUFLEN 4096
-// How many seconds to wait between checking spool_dir/msgs.
-#define POLL_WAIT 60
+// Initial poll wait in seconds - on each failure, this value is doubled. The
+// value is capped at MAX_POLL_WAIT seconds.
+#define INITIAL_POLL_WAIT 5
+// The maximum number of seconds to wait between polls.
+#define MAX_POLL_WAIT 60
 
 #ifdef HAVE_INOTIFY
 // Size in bytes of the inotify buffer.
@@ -1098,6 +1101,7 @@ int main(int argc, char** argv)
 
         openlog(__progname, LOG_CONS, LOG_MAIL);
 
+        int poll_wait = INITIAL_POLL_WAIT;
         while (1) {
             bool success = cycle(conf, groups, &status);
 
@@ -1110,7 +1114,7 @@ int main(int argc, char** argv)
 
             // On platforms that support an appropriate mechanism (such as kqueue
             // or inotify), we try and send messages as soon as we notice changes
-            // to spool_dir/msgs. We also wake-up every POLL_WAIT seconds to
+            // to spool_dir/msgs. We also wake-up every 'poll_wait' seconds to
             // check the queue and send messages. This is in case the network
             // goes up and down - we can't just wait until the user tries sending
             // messages.
@@ -1118,15 +1122,15 @@ int main(int argc, char** argv)
             // Note that if kqueue / inotify return errors, they are deliberately
             // ignored: while support for these mechanisms is very nice, it's
             // still possible for extsmaild to operate without them.
-            
+
 #ifdef HAVE_KQUEUE
-            struct timespec timeout = {POLL_WAIT, 0};
+            struct timespec timeout = {poll_wait, 0};
             kevent(kq, &changes, 1, &events, 1, &timeout);
 #elif HAVE_INOTIFY
             fd_set descriptors;
             FD_ZERO(&descriptors);
             FD_SET(fd, &descriptors);
-            struct timespec timeout = {POLL_WAIT, 0};
+            struct timespec timeout = {poll_wait, 0};
             if (pselect(fd + 1, &descriptors, NULL, NULL, &timeout, NULL) != -1)
             {
                 // Even though we don't care what the result of the inotify read
@@ -1137,8 +1141,16 @@ int main(int argc, char** argv)
             }
 #else
             // If no other support is available, we fall back on polling alone.
-            sleep(POLL_WAIT);
+            sleep(poll_wait);
 #endif
+
+            if (success)
+                poll_wait = INITIAL_POLL_WAIT;
+            else {
+                poll_wait *= 2;
+                if (poll_wait > MAX_POLL_WAIT)
+                    poll_wait = MAX_POLL_WAIT;
+            }
         }
     }
     else {
