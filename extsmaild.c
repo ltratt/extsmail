@@ -826,7 +826,6 @@ next_group:
                             nw += tnw;
                         }
                     }
-
                 }
 
                 if (fds[POLL_PIPEFROM].revents & POLLIN || eof_fd) {
