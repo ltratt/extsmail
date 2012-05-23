@@ -1092,7 +1092,7 @@ int main(int argc, char** argv)
         }
    
         if (inotify_add_watch(fd, msgs_path,
-          IN_ACCESS | IN_DELETE | IN_ATTRIB | IN_CLOSE_WRITE) < 0) {
+          IN_DELETE | IN_ATTRIB | IN_CLOSE_WRITE) < 0) {
             syslog(LOG_CRIT, "main: inotify_add_watch: %m");
             exit(1);
         }
