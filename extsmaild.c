@@ -485,10 +485,10 @@ next_msg:
         }
         else
             status->any_failure = true;
-
-        if (num_successes > 0)
-            do_notify_success_cmd(conf, status, num_successes);
     }
+
+    if (num_successes > 0)
+        do_notify_success_cmd(conf, status, num_successes);
 
     return all_sent;
 }
@@ -1159,6 +1159,7 @@ int main(int argc, char** argv)
         setlogmask(LOG_UPTO(LOG_INFO));
 
         if (!cycle(conf, groups, &status)) {
+            do_notify_failure_cmd(conf, &status);
             closelog();
             return 1;
         }
