@@ -1156,7 +1156,7 @@ int main(int argc, char** argv)
         conf->mode = BATCH_MODE;
 
         openlog(__progname, LOG_PERROR, LOG_MAIL);
-        setlogmask(LOG_UPTO(LOG_INFO));
+        setlogmask(LOG_UPTO(LOG_NOTICE));
 
         if (!cycle(conf, groups, &status)) {
             do_notify_failure_cmd(conf, &status);
