@@ -1156,6 +1156,7 @@ int main(int argc, char** argv)
         conf->mode = BATCH_MODE;
 
         openlog(__progname, LOG_PERROR, LOG_MAIL);
+        setlogmask(LOG_UPTO(LOG_INFO));
 
         if (!cycle(conf, groups, &status)) {
             closelog();
