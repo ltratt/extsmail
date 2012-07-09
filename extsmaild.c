@@ -1090,9 +1090,8 @@ int main(int argc, char** argv)
             syslog(LOG_CRIT, "main: inotify_init: %m");
             exit(1);
         }
-   
-        if (inotify_add_watch(fd, msgs_path,
-          IN_DELETE | IN_ATTRIB | IN_CLOSE_WRITE) < 0) {
+
+        if (inotify_add_watch(fd, msgs_path, IN_CLOSE_WRITE) < 0) {
             syslog(LOG_CRIT, "main: inotify_add_watch: %m");
             exit(1);
         }
