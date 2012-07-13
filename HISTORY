@@ -1,6 +1,25 @@
-================================================================================
+============================================================================
   extsmail history
-================================================================================
+============================================================================
+
+  extsmail 1.5 (2012/07/09)
+
+* Ensure that all messages which can be sent are sent. Some messages may
+  temporarily be unsendable (e.g. because of size) and shouldn't hold up
+  others.
+
+* Use exponential backoff when retrying. Quite often, a send failure is just
+  a brief blip, so retry quickly, and as retries fail, increase the length
+  of time until the next retry.
+
+* Add user-configurable notifications for successful / unsuccessful sends.
+  Allows users to easily be notified (e.g. via xosd) if mail has been sent
+  and, if not, how long it has been since everything was sent.
+
+* Various portability improvements.
+
+* Improvements to batch mode to bring it in line with daemon mode.
+
 
   extsmail 1.4 (2011/06/18)
 
@@ -33,7 +52,8 @@
   extsmail 1.0 (2009/01/05)
 
 * extsmaild's modes are now specified via the "-m <mode name>" switch. In
-  particular the behaviour of the "-d" switch is now obtained with "-m daemon".
+  particular the behaviour of the "-d" switch is now obtained with
+  "-m daemon".
 
 * More intelligent detection of whether a previous instance of extsmaild is
   running or not.
