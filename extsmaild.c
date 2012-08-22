@@ -73,6 +73,9 @@ const char *EXTERNALS_PATHS[] = {"~/.extsmail/externals",
 #define INITIAL_POLL_WAIT 5
 // The maximum number of seconds to wait between polls.
 #define MAX_POLL_WAIT 60
+// The maximum number of seconds to wait when no data has been sent or received
+// from the sendmail process.
+#define MAX_POLL_NO_SEND 60
 
 #ifdef HAVE_INOTIFY
 // Size in bytes of the inotify buffer.
@@ -789,30 +792,40 @@ next_group:
             char *buf = malloc(PTOC_BUFLEN);
             int stderr_buf_len = 0;
             bool eof_fd = false, eof_stderr = false;
+            time_t last_io_time = time(NULL);
             while (!eof_fd || !eof_stderr) {
+                if (time(NULL) - last_io_time > MAX_POLL_NO_SEND) {
+                    syslog(LOG_ERR, "%s: Timeout when sending '%s'",
+                      cur_ext->name, msg_path);
+                    goto next;
+                }
+
 #               define POLL_FD 0
 #               define POLL_PIPEFROM 1
-                struct pollfd fds[] = {{fd, POLLIN, 0}, {pipefrom[0], POLLIN, 0}};
-                
-                if (poll(fds, 2, 0) == -1) {
+                struct pollfd fds[] = {{eof_fd ? -1 : fd, POLLIN, 0},
+                  {eof_stderr ? -1 : pipefrom[0], POLLIN, 0}};
+
+                if (poll(fds, 2, \
+                  (MAX_POLL_NO_SEND - (time(NULL) - last_io_time)) * 1000) == -1) {
                     if (errno == EINTR)
                         continue;
                     goto next;
                 }
-            
+
                 if (fds[POLL_FD].revents & POLLIN) {
                     ssize_t nr = read(fd, buf, PTOC_BUFLEN);
+                    if (nr == -1) {
+                        syslog(LOG_ERR, "%s: Error when reading from '%s'",
+                          cur_ext->name, msg_path);
+                        goto next;
+                    }
+                    last_io_time = time(NULL);                    
                     if (nr == 0) {
                         // It might look like we'd like to close(fd) now, but
                         // it's still possible for things to go wrong, with fd
                         // needing to be tried again.
                         eof_fd = true;
                         close(pipeto[1]);
-                    }
-                    else if (nr == -1) {
-                        syslog(LOG_ERR, "%s: Error when reading from '%s'",
-                          cur_ext->name, msg_path);
-                        goto next;
                     }
                     else {
                         ssize_t nw = 0; // Number of bytes written
@@ -823,12 +836,13 @@ next_group:
                                   " process", cur_ext->name, cur_ext->sendmail);
                                 goto next;
                             }
+                            last_io_time = time(NULL);
                             nw += tnw;
                         }
                     }
                 }
 
-                if (fds[POLL_PIPEFROM].revents & POLLIN || eof_fd) {
+                if (fds[POLL_PIPEFROM].revents & POLLIN) {
                     ssize_t nr = read(pipefrom[0], stderr_buf + stderr_buf_len, 
                       stderr_buf_alloc - stderr_buf_len);
                     if (nr == -1) {
@@ -836,7 +850,8 @@ next_group:
                           cur_ext->name, cur_ext->sendmail);
                         goto next;
                     }
-                    else if (nr == 0) {
+                    last_io_time = time(NULL);
+                    if (nr == 0) {
                         close(pipefrom[0]);
                         eof_stderr = true;
                     }
