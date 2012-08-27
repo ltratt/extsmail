@@ -1027,14 +1027,13 @@ int main(int argc, char** argv)
                 else if (strcmp(optarg, "daemon") == 0)
                     mode = DAEMON_MODE;
                 else
-                    usage(0);
+                    usage(1);
                 break;
             case 'h':
                 usage(0);
             default:
                 usage(1);
         }
-
     }
 
     Conf *conf = read_conf();
