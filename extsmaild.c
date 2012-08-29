@@ -485,6 +485,22 @@ next_msg:
             status->spool_loc = 0;
             status->any_failure = false;
             status->last_success = status->last_notify_failure = time(NULL);
+            if (num_successes == 0) {
+                // Since we haven't sent anything, we don't really know if our
+                // externals are alive or not. We therefore assume they are
+                // all live or have come back to life. Update the last_success
+                // accordingly to force them to be used the next time there are
+                // messages to send.
+                Group *cur_group = groups;
+                while (cur_group != NULL) {
+                    External *cur_ext = cur_group->externals;
+                    while (cur_ext != NULL) {
+                        cur_ext->last_success = time(NULL);
+                        cur_ext = cur_ext->next;
+                    }
+                    cur_group = cur_group->next;
+                }
+            }
         }
         else
             status->any_failure = true;
