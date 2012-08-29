@@ -1129,16 +1129,29 @@ int main(int argc, char** argv)
 
         openlog(__progname, LOG_CONS, LOG_MAIL);
 
-        int poll_wait = INITIAL_POLL_WAIT;
+        int unsuccessful_wait = INITIAL_POLL_WAIT;
         while (1) {
-            bool success = cycle(conf, groups, &status);
+            bool all_sent = cycle(conf, groups, &status);
 
-            if (!success && conf->notify_failure_interval > 0
+            if (!all_sent && conf->notify_failure_interval > 0
               && time(NULL) >
               status.last_notify_failure + conf->notify_failure_interval) {
                 do_notify_failure_cmd(conf, &status);
                 status.last_notify_failure = time(NULL);
             }
+
+            // If all messages have been sent successfully (or if there were no
+            // messages to send), we don't want to wait INITIAL_POLL_WAIT
+            // seconds - it's far too wasteful. We might as well wait a full
+            // MAX_POLL_WAIT. If anything hasn't been sent, we wait
+            // unsuccesful_wait seconds (a gradually increasing int from
+            // INITIAL_POLL_WAIT to MAX_POLL_WAIT).
+
+            int poll_wait;
+            if (all_sent)
+                poll_wait = MAX_POLL_WAIT;
+            else
+                poll_wait = unsuccessful_wait;
 
             // On platforms that support an appropriate mechanism (such as kqueue
             // or inotify), we try and send messages as soon as we notice changes
@@ -1172,12 +1185,12 @@ int main(int argc, char** argv)
             sleep(poll_wait);
 #endif
 
-            if (success)
-                poll_wait = INITIAL_POLL_WAIT;
+            if (all_sent)
+                unsuccessful_wait = INITIAL_POLL_WAIT;
             else {
-                poll_wait *= 2;
-                if (poll_wait > MAX_POLL_WAIT)
-                    poll_wait = MAX_POLL_WAIT;
+                unsuccessful_wait *= 2;
+                if (unsuccessful_wait > MAX_POLL_WAIT)
+                    unsuccessful_wait = MAX_POLL_WAIT;
             }
         }
     }
