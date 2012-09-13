@@ -256,17 +256,6 @@ int try_externals_path(const char *path)
 //
 
 //
-// Reap child processes and stop them zombiefying. This should only happen when
-// a sendmail process seems to have stopped working and we send it a SIGKILL in
-// try_groups.
-//
-
-void sigchld_trap(int sigraised)
-{
-    while (waitpid(WAIT_MYPGRP, NULL, WNOHANG) > 0) {}
-}
-
-//
 // Try sending any messages in the spool dir. Returns true if all messages were
 // sent successfully (or if there were no messages to send), or false if at least
 // one message failed to be succesfully sent.
@@ -824,10 +813,10 @@ next_group:
                 if (time(NULL) - last_io_time > MAX_POLL_NO_SEND) {
                     syslog(LOG_ERR, "%s: Timeout when sending '%s'",
                       cur_ext->name, msg_path);
-                    // Send SIGKILL. The child process will be reaped by the 
-                    // SIGCHLD handler at some point after this call, so we
-                    // don't have to explicitly wait() on it.
+                    // Kill the child process and wait for it to die. In theory
+                    // this should happen quickly.
                     kill(pid, SIGKILL);
+                    waitpid(pid, NULL, 0);
                     goto next;
                 }
 
@@ -1080,10 +1069,6 @@ int main(int argc, char** argv)
     
     signal(SIGPIPE, SIG_IGN);
     
-    // Clean-up child processes.
-    
-    signal(SIGCHLD, sigchld_trap);
-
     // Check that everything to do with the spool dir is OK.
 
     if (!check_spool_dir(conf))
