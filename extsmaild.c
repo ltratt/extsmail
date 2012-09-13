@@ -1020,8 +1020,9 @@ void cycle_killed_pids(Status *status)
     while (*pll != NULL) {
         if (waitpid((*pll)->pid, NULL, WNOHANG) == (*pll)->pid) {
             // The process has exited, so remove it from the linked list.
+            PID_LList *old_pll = *pll;
             *pll = (*pll)->next;
-            free(*pll);
+            free(old_pll);
         }
         else
             *pll = (*pll)->next;
