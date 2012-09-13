@@ -83,14 +83,27 @@ const char *EXTERNALS_PATHS[] = {"~/.extsmail/externals",
 #endif
 
 
+typedef struct _pid_llist {
+    pid_t pid;
+    struct _pid_llist *next;
+} PID_LList;
+
 typedef struct {
-    long spool_loc;      // The next entry number in the spool dir to try.
-    bool any_failure;    // Set to true if any message in the spool dir was not
-                         // sent. Reset on each cycle
-    time_t last_success; // The time of the last successful send of all
-                         // messages.
+    long spool_loc;       // The next entry number in the spool dir to try.
+    bool any_failure;     // Set to true if any message in the spool dir was not
+                          // sent. Reset on each cycle
+    time_t last_success;  // The time of the last successful send of all
+                          // messages.
     time_t last_notify_failure; // The time of the last notification of failure.
-                         // Note this always >= last_success.
+                          // Note this always >= last_success.
+
+    // A linked list of processes which have been timed out and for which we're
+    // waiting for a SIGKILL to take effect. Normally SIGKILL has immediate
+    // effect, unless the process is an uninterruptable sleep (e.g. it's waiting
+    // on a read from a disk with a bad sector) at which point the kernel may
+    // keep the process alive but not send signals to it. We have to keep seeing
+    // if such processes have come alive and died
+    PID_LList *pid_llist;
 } Status;
 
 
@@ -99,7 +112,9 @@ extern char* __progname;
 Group *read_externals(void);
 int try_externals_path(const char *);
 bool cycle(Conf *, Group *, Status *);
-bool try_groups(Conf *, Group *, const char *, int);
+bool try_groups(Conf *, Group *, Status *, const char *, int);
+void push_killed_pid(Status *, pid_t);
+void cycle_killed_pids(Status *);
 void do_notify_failure_cmd(Conf *, Status *);
 void do_notify_success_cmd(Conf *, Status *, int);
 
@@ -431,7 +446,7 @@ bool cycle(Conf *conf, Group *groups, Status *status)
                 goto next_try;
             }
 
-            if (try_groups(conf, groups, msg_path, fd)) {
+            if (try_groups(conf, groups, status, msg_path, fd)) {
                 num_successes += 1;
                 break;
             }
@@ -519,7 +534,8 @@ next_msg:
 // otherwise.
 //
 
-bool try_groups(Conf *conf, Group *groups, const char *msg_path, int fd)
+bool try_groups(Conf *conf, Group *groups, Status *status,
+                const char *msg_path, int fd)
 {
     // Check that the version string is one we can handle.
     
@@ -813,10 +829,9 @@ next_group:
                 if (time(NULL) - last_io_time > MAX_POLL_NO_SEND) {
                     syslog(LOG_ERR, "%s: Timeout when sending '%s'",
                       cur_ext->name, msg_path);
-                    // Kill the child process and wait for it to die. In theory
-                    // this should happen quickly.
+                    // Kill the child process.
                     kill(pid, SIGKILL);
-                    waitpid(pid, NULL, 0);
+                    push_killed_pid(status, pid);
                     goto next;
                 }
 
@@ -974,6 +989,47 @@ preheaderfail:
 
 
 
+//
+// Push the pid 'pid' onto the stack of processes which has been SIGKILLed.
+//
+
+void push_killed_pid(Status *status, pid_t pid)
+{
+    // Before we malloc more memory, see if any previous killed PIDs have died.
+    // If so, it'll free up some memory.
+    cycle_killed_pids(status);
+
+    PID_LList *pll = malloc(sizeof(PID_LList));
+    if (pll == NULL)
+        errx(1, "push_killed_pid: unable to allocate memory");
+    pll->pid = pid;
+    pll->next = status->pid_llist;
+    status->pid_llist = pll;
+}
+
+
+
+//
+// Go through the list of processes which have been SIGKILLed and see if any
+// of them have actually exited.
+//
+
+void cycle_killed_pids(Status *status)
+{
+    PID_LList **pll = &status->pid_llist;
+    while (*pll != NULL) {
+        if (waitpid((*pll)->pid, NULL, WNOHANG) == (*pll)->pid) {
+            // The process has exited, so remove it from the linked list.
+            *pll = (*pll)->next;
+            free(*pll);
+        }
+        else
+            *pll = (*pll)->next;
+    }
+}
+
+
+
 void do_notify_failure_cmd(Conf *conf, Status *status)
 {
     assert(conf->notify_failure_interval > 0);
@@ -1034,7 +1090,6 @@ void usage(int rtn_code)
 }
 
 
-
 int main(int argc, char** argv)
 {
     Mode mode = BATCH_MODE;
@@ -1078,6 +1133,7 @@ int main(int argc, char** argv)
     status.spool_loc = 0;
     status.any_failure = false;
     status.last_success = status.last_notify_failure = time(NULL);
+    status.pid_llist = NULL;
 
     if (mode == DAEMON_MODE) {
         daemon(1, 0);
@@ -1143,6 +1199,8 @@ int main(int argc, char** argv)
                 do_notify_failure_cmd(conf, &status);
                 status.last_notify_failure = time(NULL);
             }
+
+            cycle_killed_pids(&status);
 
             // If all messages have been sent successfully (or if there were no
             // messages to send), we don't want to wait INITIAL_POLL_WAIT
