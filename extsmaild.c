@@ -1016,16 +1016,23 @@ void push_killed_pid(Status *status, pid_t pid)
 
 void cycle_killed_pids(Status *status)
 {
-    PID_LList **pll = &status->pid_llist;
-    while (*pll != NULL) {
-        if (waitpid((*pll)->pid, NULL, WNOHANG) == (*pll)->pid) {
+    PID_LList *pll = status->pid_llist;
+    PID_LList *last_pll = NULL;
+    while (pll != NULL) {
+        if (waitpid(pll->pid, NULL, WNOHANG) == pll->pid) {
             // The process has exited, so remove it from the linked list.
-            PID_LList *old_pll = *pll;
-            *pll = (*pll)->next;
-            free(old_pll);
+            PID_LList *dead_pll = pll;
+            pll = pll->next;
+            free(dead_pll);
+            if (last_pll == NULL)
+                status->pid_llist = pll;
+            else
+                last_pll->next = pll;
         }
-        else
-            *pll = (*pll)->next;
+        else {
+            last_pll = pll;
+            pll = pll->next;
+        }
     }
 }
 
