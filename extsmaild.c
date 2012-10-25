@@ -829,10 +829,7 @@ next_group:
                 if (time(NULL) - last_io_time > MAX_POLL_NO_SEND) {
                     syslog(LOG_ERR, "%s: Timeout when sending '%s'",
                       cur_ext->name, msg_path);
-                    // Kill the child process.
-                    kill(pid, SIGKILL);
-                    push_killed_pid(status, pid);
-                    goto next;
+                    goto next_with_kill;
                 }
 
 #               define POLL_FD 0
@@ -844,7 +841,7 @@ next_group:
                   (MAX_POLL_NO_SEND - (time(NULL) - last_io_time)) * 1000) == -1) {
                     if (errno == EINTR)
                         continue;
-                    goto next;
+                    goto next_with_kill;
                 }
 
                 if (fds[POLL_FD].revents & POLLIN) {
@@ -852,7 +849,7 @@ next_group:
                     if (nr == -1) {
                         syslog(LOG_ERR, "%s: Error when reading from '%s'",
                           cur_ext->name, msg_path);
-                        goto next;
+                        goto next_with_kill;
                     }
                     last_io_time = time(NULL);                    
                     if (nr == 0) {
@@ -869,7 +866,7 @@ next_group:
                             if (tnw == -1) {
                                 syslog(LOG_ERR, "%s: Error when writing to '%s'"
                                   " process", cur_ext->name, cur_ext->sendmail);
-                                goto next;
+                                goto next_with_kill;
                             }
                             last_io_time = time(NULL);
                             nw += tnw;
@@ -883,7 +880,7 @@ next_group:
                     if (nr == -1) {
                         syslog(LOG_ERR, "%s: When reading stderr from '%s': %m",
                           cur_ext->name, cur_ext->sendmail);
-                        goto next;
+                        goto next_with_kill;
                     }
                     last_io_time = time(NULL);
                     if (nr == 0) {
@@ -916,9 +913,9 @@ next_group:
             // assume it didn't execute correctly and that we'll need to
             // retry the message send later.
 
-            int status;
-            if (waitpid(pid, &status, 0) || WIFEXITED(status)) {
-                int child_rtn = WEXITSTATUS(status);
+            int rtn_status;
+            if (waitpid(pid, &rtn_status, 0) || WIFEXITED(rtn_status)) {
+                int child_rtn = WEXITSTATUS(rtn_status);
                 if (child_rtn != 0) {
                     syslog(LOG_ERR, "%s: Received error %d when executing "
                       "'%s' on '%s': %.*s", cur_ext->name, child_rtn,
@@ -946,6 +943,17 @@ next_group:
             syslog(LOG_INFO, "%s: Message '%s' sent", cur_ext->name, msg_path);
 
             return true;
+
+next_with_kill:
+            // We want to go to the next message, but something has gone wrong,
+            // so the sendmail process either hasn't succeeded or (at best)
+            // hasn't been 'wait'ed upon. We send the process a SIGKILL (since
+            // something has obviously gone wrong), then add it to the list
+            // of processes we're waiting to die. This avoids processes
+            // turning into zombies.
+
+            kill(pid, SIGKILL);
+            push_killed_pid(status, pid);
 
 next:
             free(buf);
