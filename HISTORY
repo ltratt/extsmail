@@ -2,6 +2,15 @@
   extsmail history
 ============================================================================
 
+  extsmail 1.6 (2012/11/17)
+
+* Time out stalled sendmail processes. If a sendmail process hasn't read or
+  written any data for 60 seconds, it is killed and later retried. This
+  stops a stalled sendmail from perpetually blocking extsmail. Although
+  rare, this could happen e.g. when an interface went down while an SSH
+  session was open.
+
+
   extsmail 1.5 (2012/07/09)
 
 * Ensure that all messages which can be sent are sent. Some messages may
