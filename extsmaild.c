@@ -352,9 +352,8 @@ bool cycle(Conf *conf, Group *groups, Status *status)
         struct dirent *dp = readdir(dirp);
         if (dp == NULL) {
             if (errno == 0) {
-                if (conf->mode == DAEMON_MODE) {
-                    // We've got to the end of the directory.
-                    
+                // We've got to the end of the directory.
+                if (conf->mode == DAEMON_MODE) {                    
                     if (tried_once && start_spool_loc == 0) {
                         // We started this cycle from the start of the directory,
                         // so we can now be sure that we've read everything.
