@@ -1,5 +1,0 @@
-Timeouts: a child process can execute indefinitely, which prevents further
-messages being sent. Some sort of timeout on child processes seems
-appropriate, but what exactly? Whatever limit one chooses, one can find an
-argument that a child process will need "just a bit longer". Perhaps a
-gradually increasing timeout? Or starting up multiple child processes?
