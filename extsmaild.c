@@ -411,8 +411,8 @@ bool cycle(Conf *conf, Group *groups, Status *status)
         while (1) {
             int fd = open(msg_path, O_RDONLY);
             if (fd == -1) {
-                // If we couldn't so much as open the file - something odd has
-                // happened.
+                // If we couldn't so much as open the file then something odd
+                // has happened.
                 goto next_try;
             }
 
@@ -741,11 +741,10 @@ next_group:
             // working in this cycle.
 
             if (conf->mode == DAEMON_MODE) {
-                // If we're in daemon mode then, if this external has been found
-                // not to be working, check the timeout (if it exists). If the
-                // timeout hasn't been exceeded, then we have to give up on
-                // trying to send this messages via this, or other, externals -
-                // we need to wait for the timeout to be exceeded.       
+                // Check the external's timeout (if it hsa one). If the timeout
+                // hasn't been exceeded, then we have to give up on trying to
+                // send this messages via this, or other, externals - we need
+                // to wait for the timeout to be exceeded.
                 if (cur_ext->timeout != 0 &&
                   cur_ext->last_success + cur_ext->timeout > time(NULL)) {
                     goto fail;
@@ -968,11 +967,10 @@ next:
 
             cur_ext->working = false;
             if (conf->mode == DAEMON_MODE) {
-                // If we're in daemon mode then, if this external has been found
-                // not to be working, check the timeout (if it exists). If the
-                // timeout hasn't been exceeded, then we have to give up on
-                // trying to send this messages via this, or other, externals -
-                // we need to wait for the timeout to be exceeded.       
+                // Check the external's timeout (if it hsa one). If the timeout
+                // hasn't been exceeded, then we have to give up on trying to
+                // send this messages via this, or other, externals - we need
+                // to wait for the timeout to be exceeded.  
                 if (cur_ext->timeout != 0
                   && cur_ext->last_success + cur_ext->timeout > time(NULL)) {
                     goto fail;
