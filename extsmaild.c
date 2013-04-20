@@ -584,6 +584,10 @@ bool try_groups(Conf *conf, Group *groups, Status *status,
             syslog(LOG_ERR, "Corrupted message '%s'", msg_path);
             return false;
         }
+        if (arg[sa] != '\n') {
+            syslog(LOG_ERR, "Corrupted message '%s'", msg_path);
+            return false;
+        }
         arg[sa] = '\0';
         
         argv[i] = arg;
