@@ -202,7 +202,7 @@ defn  : TID TASSIGN TSTRING
                     // whitespace characters - unless it's within quotes, when
                     // it can contain whitespace.
 
-                    int start, end;
+                    int start;
                     if ($<str>3[i] == '\'') {
                         start = i + 1;
                         i += 1;
@@ -214,11 +214,6 @@ defn  : TID TASSIGN TSTRING
                             else
                                 i += 1;
                         }
-                        
-                        if (i == len)
-                            end = i;
-                        else
-                            end = i - 1;
                     }
                     else if ($<str>3[i] == '"') {
                         start = i + 1;
@@ -231,17 +226,11 @@ defn  : TID TASSIGN TSTRING
                             else
                                 i += 1;
                         }
-                        
-                        if (i == len)
-                            end = i;
-                        else
-                            end = i - 1;
                     }
                     else {
                         start = i;
                         while (i < len && ! IS_WHITESPACE(i))
                             i += 1;
-                        end = i;
                     }
                     char *arg = malloc(i - start + 1);
                     memcpy(arg, $<str>3 + start, i - start);
