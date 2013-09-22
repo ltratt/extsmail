@@ -810,6 +810,7 @@ next_group:
             sub_argv[nargv + cur_ext->sendmail_nargv] = NULL;
 
             execvp(cur_ext->sendmail_argv[0], (char **const) sub_argv);
+            free(sub_argv);
             syslog(LOG_CRIT, "try_groups: execvp: %m");
             goto fail;
         }
