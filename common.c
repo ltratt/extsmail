@@ -62,6 +62,8 @@ Conf *conf; // Global variable needed for Yacc. Sigh.
 Conf *read_conf()
 {
     conf = malloc(sizeof(Conf));
+    if (conf == NULL)
+        errx(1, "read_conf: unable to allocate memory");
     conf->spool_dir = NULL;
     conf->notify_failure_interval = 0;
     conf->notify_failure_cmd = NULL;
@@ -233,6 +235,8 @@ char *fdrdline(int fd)
         if (line == NULL) {
             line_alloc = i + 1;
             line = malloc(line_alloc);
+            if (line == NULL)
+                errx(1, "fdrdline: malloc");
         }
         else if (line_alloc < line_len + i + 1) {
             line = realloc(line, line_len + i + 1);
@@ -292,6 +296,9 @@ char *expand_path(const char *path)
 char *mk_str(char *str)
 {
     char *buf = malloc(strlen(str) + 1);
+    if (buf == NULL)
+        errx(1, "mk_str: malloc");
+
     memmove(buf, str, strlen(str) + 1);
     
     return buf;
@@ -315,6 +322,8 @@ char *str_replace(const char *str, const char *old, const char *new)
     }
     
     char *new_str = malloc(new_size + 1);
+    if (new_str == NULL)
+        errx(1, "str_replace: malloc");
     i = 0;
     size_t j = 0;
     while (i < strlen(str)) {
