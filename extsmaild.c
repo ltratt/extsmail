@@ -576,15 +576,12 @@ bool try_groups(Conf *conf, Group *groups, Status *status,
         }
 
         ssize_t nr = read(fd, arg, sa + 1);
-        if (nr < sa + 1) { // Note this also captures nr == 0 and nr == -1
+        if (nr < sa + 1 // Note this also captures nr == 0 and nr == -1
+          || arg[sa] != '\n') { 
             for (int j = 0; j < i; j += 1)
                 free(argv[j]);
             free(argv);
             free(arg);
-            syslog(LOG_ERR, "Corrupted message '%s'", msg_path);
-            return false;
-        }
-        if (arg[sa] != '\n') {
             syslog(LOG_ERR, "Corrupted message '%s'", msg_path);
             return false;
         }
