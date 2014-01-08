@@ -95,7 +95,6 @@ int try_conf_path(const char *path)
 {
     char *cnd_path = expand_path(path);
     if (cnd_path == NULL) {
-        free(cnd_path);
         return -1;
     }
 
