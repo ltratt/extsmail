@@ -17,7 +17,7 @@ extsmail: ${EXTSMAIL_OBJS}
 
 
 EXTSMAILD_OBJS = conf_parser.tab.o conf_tokenizer.o externals_parser.tab.o \
-        externals_tokenizer.o extsmaild.o common.o
+        externals_tokenizer.o extsmaild.o common.o @COMPAT_STRTONUM@
 
 extsmaild: ${EXTSMAILD_OBJS}
 	${CC} -o extsmaild ${EXTSMAILD_OBJS}
