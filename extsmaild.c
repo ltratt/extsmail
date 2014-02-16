@@ -235,9 +235,17 @@ int try_externals_path(const char *path)
         return -1;
     }
 
+    yyein = fopen(cnd_path, "rt");
+    if (yyein == NULL) {
+        free(cnd_path);
+        if (errno == ENOENT)
+            return 1;
+        return -1;
+    }
+    
     // See whether the externals exists at 'path'.
     struct stat externals_st;
-    if (stat(cnd_path, &externals_st) == -1) {
+    if (fstat(fileno(yyein), &externals_st) == -1) {
         free(cnd_path);
         return 1;
     }
@@ -247,12 +255,6 @@ int try_externals_path(const char *path)
     if (externals_st.st_uid != geteuid() || externals_st.st_gid != getegid()) {
         warnx("The user and / or group permissions of '%s' do not match the "
           "executing user", path);
-        free(cnd_path);
-        return -1;
-    }
-
-    yyein = fopen(cnd_path, "rt");
-    if (yyein == NULL) {
         free(cnd_path);
         return -1;
     }
