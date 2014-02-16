@@ -98,19 +98,13 @@ int try_conf_path(const char *path)
         return -1;
     }
 
-    // See whether the configuration exists at 'path'.
-    struct stat conf_st;
-    if (stat(cnd_path, &conf_st) == -1) {
-        free(cnd_path);
-        return 1;
-    }
-
     yycin = fopen(cnd_path, "rt");
+    free(cnd_path);
     if (yycin == NULL) {
-        free(cnd_path);
+        if (errno == ENOENT)
+            return 1;
         return -1;
     }
-    free(cnd_path);
     
     if (yycparse() != 0)
         return -1;
