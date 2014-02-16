@@ -26,6 +26,7 @@
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <poll.h>
 #include <regex.h>
 #include <signal.h>
@@ -554,8 +555,13 @@ bool try_groups(Conf *conf, Group *groups, Status *status,
         syslog(LOG_ERR, "Corrupted message '%s'", msg_path);
         return false;
     }
-    int nargv = atoi(nas);
+    const char *errstr = NULL;
+    int nargv = (int) strtonum(nas, 0, INT_MAX - 1, &errstr);
     free(nas);
+    if (errstr != NULL) {
+        syslog(LOG_ERR, "Invalid number of arguments in '%s'", msg_path);
+        return false;
+    }
     char **argv = malloc((nargv + 1) * sizeof(char *));
     for (int i = 0; i < nargv; i++) {
         char *as = fdrdline(fd); // Size of argument
@@ -566,8 +572,16 @@ bool try_groups(Conf *conf, Group *groups, Status *status,
             syslog(LOG_ERR, "Corrupted message '%s'", msg_path);
             return false;
         }
-        int sa = atoi(as);
+        assert(errstr == NULL);
+        int sa = (int) strtonum(as, 0, INT_MAX - 1, &errstr);
         free(as);
+        if (errstr != NULL) {
+            for (int j = 0; j < i; j += 1)
+                free(argv[j]);
+            free(argv);
+            syslog(LOG_ERR, "Invalid argument size in '%s'", msg_path);
+            return false;
+        };
         
         char *arg = malloc(sa + 1);
         if (arg == NULL) {
