@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/file.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "conf.h"
@@ -58,7 +59,8 @@ int main(int argc, char** argv)
       DIR_SEP) == -1) {
         errx(1, "main: asprintf: unable to allocate memory");
     }
-    
+
+    umask(S_IRWXG | S_IRWXO | S_IXUSR);
     int sfd;
     if ((sfd = mkstemp(sp)) == -1)
         err(1, "mkstemp: when creating spool file %s", sp);
