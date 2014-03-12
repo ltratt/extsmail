@@ -44,11 +44,14 @@
 #   include <sys/inotify.h>
 #   include <sys/select.h>
 #endif
-
 #include <sys/wait.h>
 #include <syslog.h>
 #include <time.h>
 #include <unistd.h>
+
+#ifndef HAVE_STRTONUM
+#include "compat/strtonum.h"
+#endif
 
 #include "conf.h"
 #include "common.h"
