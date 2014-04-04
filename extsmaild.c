@@ -1065,8 +1065,6 @@ void cycle_killed_pids(Status *status)
 
 void do_notify_failure_cmd(Conf *conf, Status *status)
 {
-    assert(conf->notify_failure_interval > 0);
-
     if (conf->notify_failure_cmd == NULL)
         return;
 
