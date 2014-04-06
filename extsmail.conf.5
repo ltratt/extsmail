@@ -96,16 +96,17 @@ The simplest configuration file looks as follows:
 spool_dir = "~/somewhere"
 .Ed
 .Pp
-A more complex configuration looks as follows:
+A more complex configuration which uses a notification framework to inform the
+user of mail sending and failure looks as follows:
 .Bd -literal -offset indent
 spool_dir = "~/somewhere"
 notify_failure_interval = 30m
-notify_failure_cmd = "echo 'extsmaild: ${TIME} since a fully
-  successful send cycle' | osd_cat -Acenter -cgreen -pbottom
-  -s1 -f'-*-*-*-*-*-*-24' -d 10 -"
-notify_success_cmd = "echo 'extsmaild: ${SUCCESSES} messages
-  successfully sent' | osd_cat -Acenter -cgreen -pbottom
-  -s1 -f'-adobe-helvetica-*-*-*-*-24' -d 3 -"
+notify_failure_cmd = "notify-send -a extsmaild -c email
+  -i mail-send -u critical 'extsmaild: ${TIME} since a fully
+  successful send cycle'"
+notify_success_cmd = "notify-send -a extsmaild -c email
+  -i mail-send -u low 'extsmaild: ${SUCCESSES} messages
+  successfully sent'"
 .Ed
 .Sh SEE ALSO
 .Xr extsmail 1 ,
