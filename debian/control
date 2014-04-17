@@ -1,0 +1,21 @@
+Source: extsmail
+Section: mail
+Priority: extra
+Maintainer: Olivier Girondel <olivier@biniou.info>
+Build-Depends: debhelper (>= 9), bison, flex
+Standards-Version: 3.9.5
+Homepage: http://tratt.net/laurie/src/extsmail/
+
+Package: extsmail
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: enables the robust sending of e-mail to external commands
+ extsmail masquerades as the standard UNIX sendmail program, reading
+ messages, and later piping them to user-defined commands.
+ .
+ In a sense, extsmail can be thought of as a very simple "tiny" sendmail
+ (Think SSMTP, UUCP, ...)
+ .
+ A typical use is to allow e-mail to be piped via ssh to external servers
+ running a full sendmail-compatible MTA. extsmail is designed to have
+ sensible defaults, and configuring it is a one-off, quick job.
