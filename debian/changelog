@@ -1,0 +1,13 @@
+extsmail (1.8-1) unstable; urgency=low
+
+  * New upstream 1.8 release.
+  * debian/control: Standards-Version: 3.9.5.
+  * debian/control: Build-Depends: debhelper (>= 9).
+
+ -- Olivier Girondel <olivier@biniou.info>  Thu, 17 Apr 2014 19:08:32 +0100
+
+extsmail (1.4-1) unstable; urgency=low
+
+  * Initial release (Closes: #652731)
+
+ -- Olivier Girondel <olivier@biniou.info>  Tue, 20 Dec 2011 21:33:46 +0100
