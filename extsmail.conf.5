@@ -101,11 +101,11 @@ user of mail sending and failure looks as follows:
 .Bd -literal -offset indent
 spool_dir = "~/somewhere"
 notify_failure_interval = 30m
-notify_failure_cmd = "notify-send -a extsmaild -c email
-  -i mail-send -u critical 'extsmaild: ${TIME} since a fully
+notify_failure_cmd = "notify-send \-a extsmaild \-c email
+  \-i mail-send \-u critical 'extsmaild: ${TIME} since a fully
   successful send cycle'"
-notify_success_cmd = "notify-send -a extsmaild -c email
-  -i mail-send -u low 'extsmaild: ${SUCCESSES} messages
+notify_success_cmd = "notify-send \-a extsmaild \-c email
+  \-i mail-send \-u low 'extsmaild: ${SUCCESSES} messages
   successfully sent'"
 .Ed
 .Sh SEE ALSO
