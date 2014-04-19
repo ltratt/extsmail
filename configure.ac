@@ -18,8 +18,13 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+AC_INIT([extsmail],[1.8])
+AC_PREREQ([2.68])
+AC_CONFIG_SRCDIR([extsmail.c])
+AC_CONFIG_AUX_DIR([build-aux])
 
-AC_INIT([extsmail], EXTSMAIL_VERSION)
+AM_INIT_AUTOMAKE([1.11 foreign -Wall -Werror subdir-objects])
+
 
 ################################################################################
 # Generic initialization
@@ -27,13 +32,10 @@ AC_INIT([extsmail], EXTSMAIL_VERSION)
 
 AC_CONFIG_HEADER(Config.h)
 
-AC_LANG(C)
-
 AC_PROG_CC
-AC_ISC_POSIX
-AC_PROG_GCC_TRADITIONAL
+AC_PROG_YACC
+AC_PROG_LEX
 AC_GNU_SOURCE
-
 
 ###############################################################################
 # Function / feature checks
