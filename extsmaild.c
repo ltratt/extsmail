@@ -121,6 +121,7 @@ void push_killed_pid(Status *, pid_t);
 void cycle_killed_pids(Status *);
 void do_notify_failure_cmd(Conf *, Status *);
 void do_notify_success_cmd(Conf *, Status *, int);
+bool set_nonblock(int);
 
 
 
@@ -609,15 +610,6 @@ bool try_groups(Conf *conf, Group *groups, Status *status,
     }
     argv[nargv] = NULL;
 
-    // Setup a buffer into which we will read stderr from any child processes.
-    
-    size_t stderr_buf_alloc = STDERR_BUF_ALLOC;
-    char *stderr_buf = malloc(stderr_buf_alloc);
-    if (stderr_buf == NULL) {
-        syslog(LOG_CRIT, "try_groups: malloc: %m");
-        exit(1);
-    }
-
     // We now need to record where the actual message starts.
     
     off_t mf_body_off = lseek(fd, 0, SEEK_CUR);
@@ -839,81 +831,154 @@ next_group:
             // sendmail process, and read its stderr output. This reading and
             // writing can be interleaved.
 
-            char *buf = malloc(PTOC_BUFLEN);
-            int stderr_buf_len = 0;
-            bool eof_fd = false, eof_stderr = false;
+            int cstderr_fd = pipefrom[0]; // Child stderr FD
+            int cstdin_fd = pipeto[1];    // Child stdin 
+
+            // The temporary buffer we use for reading from fd.
+            size_t fdbuf_alloc = PTOC_BUFLEN;
+            char *fdbuf = malloc(fdbuf_alloc);
+            size_t fdbuf_used = 0, fdbuf_off = 0;
+
+            // The stderr buffer.
+            size_t stderrbuf_alloc = STDERR_BUF_ALLOC;
+            char *stderrbuf = malloc(stderrbuf_alloc);
+            size_t stderrbuf_used = 0;
+
+            if (fdbuf == NULL || stderrbuf == NULL) {
+                syslog(LOG_CRIT, "try_groups: malloc: %m");
+                exit(1);
+            }
+            
+            // Set all the files to be non-blocking.
+            if (!set_nonblock(fd) || !set_nonblock(cstderr_fd)
+              || !set_nonblock(cstdin_fd)) {
+                syslog(LOG_ERR, "%s: Can't set file descriptor flags",
+                  cur_ext->name);
+                goto next_with_kill;
+            }
+
+            bool eof_fd = false, eof_cstderr = false;
             time_t last_io_time = time(NULL);
-            while (!eof_fd || !eof_stderr) {
-                if (time(NULL) - last_io_time > MAX_POLL_NO_SEND) {
+            while (!eof_fd || !eof_cstderr) {
+                // The 3 defines below must match the order that the descriptors
+                // are passed to poll.
+#               define POLL_FD 0
+#               define POLL_CSTDIN 1
+#               define POLL_CSTDERR 2
+                struct pollfd fds[] = {
+                  {fd, POLLIN, 0},
+                  {cstdin_fd, POLLOUT, 0},
+                  {cstderr_fd, POLLIN, 0}};
+
+                if (eof_fd || fdbuf_used > 0) {
+                    // If fd is closed, or there's still stuff in the buffer
+                    // that hasn't been written, don't poll it.
+                    fds[POLL_FD].fd = -1;
+                }
+                if (fdbuf_used == 0) {
+                    // If there's nothing to write, there's no point polling
+                    // the child's stdin process.
+                    fds[POLL_CSTDIN].fd = -1;
+                }
+                if (eof_cstderr)
+                    fds[POLL_CSTDERR].fd = -1;
+
+                time_t tout = (MAX_POLL_NO_SEND - (time(NULL) - last_io_time)) * 1000;
+                if (tout <= 0) {
                     syslog(LOG_ERR, "%s: Timeout when sending '%s'",
                       cur_ext->name, msg_path);
                     goto next_with_kill;
                 }
 
-#               define POLL_FD 0
-#               define POLL_PIPEFROM 1
-                struct pollfd fds[] = {{eof_fd ? -1 : fd, POLLIN, 0},
-                  {eof_stderr ? -1 : pipefrom[0], POLLIN, 0}};
-
-                if (poll(fds, 2, \
-                  (MAX_POLL_NO_SEND - (time(NULL) - last_io_time)) * 1000) == -1) {
+                if (poll(fds, 3, tout) == -1) {
                     if (errno == EINTR)
                         continue;
                     goto next_with_kill;
                 }
 
-                if (fds[POLL_FD].revents & POLLIN) {
-                    ssize_t nr = read(fd, buf, PTOC_BUFLEN);
+                // Read in data from fd (if appropriate)
+
+                if (!eof_fd && fdbuf_used == 0 && fds[POLL_FD].revents & POLLIN) {
+                    ssize_t nr = read(fd, fdbuf, fdbuf_alloc);
                     if (nr == -1) {
+                        if (errno == EAGAIN || errno == EINTR)
+                            continue;
                         syslog(LOG_ERR, "%s: Error when reading from '%s'",
                           cur_ext->name, msg_path);
                         goto next_with_kill;
                     }
-                    last_io_time = time(NULL);                    
+                    assert(nr >= 0);
+                    last_io_time = time(NULL);
                     if (nr == 0) {
                         // It might look like we'd like to close(fd) now, but
                         // it's still possible for things to go wrong, with fd
                         // needing to be tried again.
                         eof_fd = true;
-                        close(pipeto[1]);
+                        close(cstdin_fd);
                     }
                     else {
-                        ssize_t nw = 0; // Number of bytes written
-                        while (nw < nr) {
-                            ssize_t tnw = write(pipeto[1], buf + nw, nr - nw);
-                            if (tnw == -1) {
-                                syslog(LOG_ERR, "%s: Error when writing to '%s'"
-                                  " process", cur_ext->name, cur_ext->sendmail);
-                                goto next_with_kill;
-                            }
-                            last_io_time = time(NULL);
-                            nw += tnw;
+                        fdbuf_off = 0;
+                        fdbuf_used = (size_t) nr;
+                    }
+                    continue;
+                }
+
+                // Write data to the child process (if appropriate).
+
+                if (fdbuf_used > 0 && fds[POLL_CSTDIN].revents & POLLOUT) {
+                    while (fdbuf_off < fdbuf_used) {
+                        ssize_t tnw = write(cstdin_fd, fdbuf + fdbuf_off, fdbuf_used - fdbuf_off);
+                        if (tnw == -1) {
+                            if (errno == EAGAIN || errno == EINTR)
+                                break;
+                            syslog(LOG_ERR, "%s: Error when writing to '%s'"
+                              " process", cur_ext->name, cur_ext->sendmail);
+                            goto next_with_kill;
                         }
+                        assert(tnw >= 0);
+                        if (tnw == 0) {
+                            // The write pipe has been closed, but we still have
+                            // data to write out.
+                            syslog(LOG_ERR, "%s: Received EOF when writing to '%s'"
+                              " process", cur_ext->name, cur_ext->sendmail);
+                            goto next_with_kill;
+                        }
+                        fdbuf_off += tnw;
+                        assert(fdbuf_off <= fdbuf_used);
+                        if (fdbuf_off == fdbuf_used) {
+                            fdbuf_off = fdbuf_used = 0;
+                        }
+                        last_io_time = time(NULL);
                     }
                 }
 
-                if (fds[POLL_PIPEFROM].revents & POLLIN) {
-                    ssize_t nr = read(pipefrom[0], stderr_buf + stderr_buf_len, 
-                      stderr_buf_alloc - stderr_buf_len);
+                // Read the child's stderr (if appropriate).
+
+                if (!eof_cstderr && fds[POLL_CSTDERR].revents & POLLIN) {
+                    ssize_t nr = read(cstderr_fd, stderrbuf + stderrbuf_used,
+                      stderrbuf_alloc - stderrbuf_used);
                     if (nr == -1) {
+                        if (errno == EAGAIN || errno == EINTR)
+                            continue;
                         syslog(LOG_ERR, "%s: When reading stderr from '%s': %m",
                           cur_ext->name, cur_ext->sendmail);
                         goto next_with_kill;
                     }
+                    assert(nr >= 0);
                     last_io_time = time(NULL);
                     if (nr == 0) {
-                        close(pipefrom[0]);
-                        eof_stderr = true;
+                        close(cstderr_fd);
+                        eof_cstderr = true;
                     }
-                    else if ((size_t) nr == stderr_buf_alloc - stderr_buf_len) {
-                        stderr_buf_alloc += STDERR_BUF_ALLOC;
-                        stderr_buf = realloc(stderr_buf, stderr_buf_alloc);
-                        if (stderr_buf == NULL) {
+                    else if ((size_t) nr == stderrbuf_alloc - stderrbuf_used) {
+                        stderrbuf_alloc += STDERR_BUF_ALLOC;
+                        stderrbuf = realloc(stderrbuf, stderrbuf_alloc);
+                        if (stderrbuf == NULL) {
                             syslog(LOG_CRIT, "try_groups: realloc: %m");
                             exit(1);
                         }
                     }
-                    stderr_buf_len += nr;
+                    stderrbuf_used += nr;
                 }
             }
 
@@ -921,10 +986,10 @@ next_group:
             // sometimes have random newline chars at the end of line - this loop
             // chomps them off.
 
-            while (stderr_buf_len > 0
-              && (stderr_buf[stderr_buf_len - 1] == '\n'
-              || stderr_buf[stderr_buf_len - 1] == '\r'))
-                stderr_buf_len -= 1;
+            while (stderrbuf_used > 0
+              && (stderrbuf[stderrbuf_used - 1] == '\n'
+              || stderrbuf[stderrbuf_used - 1] == '\r'))
+                stderrbuf_used -= 1;
 
             // Now we need to wait for confirmation that the child process
             // executed correctly. We are conservative here: if in doubt, we
@@ -937,7 +1002,7 @@ next_group:
                 if (child_rtn != 0) {
                     syslog(LOG_ERR, "%s: Received error %d when executing "
                       "'%s' on '%s': %.*s", cur_ext->name, child_rtn,
-                      cur_ext->sendmail, msg_path, stderr_buf_len, stderr_buf);
+                      cur_ext->sendmail, msg_path, stderrbuf_used, stderrbuf);
                     goto next;
                 }
             }
@@ -952,9 +1017,9 @@ next_group:
             for (int j = 0; j < nargv; j += 1)
                 free(argv[j]);
             free(argv);
-            free(stderr_buf);
+            free(stderrbuf);
             free(dhd_buf);
-            free(buf);
+            free(fdbuf);
             unlink(msg_path);
 
             cur_ext->last_success = time(NULL);
@@ -974,11 +1039,12 @@ next_with_kill:
             push_killed_pid(status, pid);
 
 next:
-            free(buf);
+            free(fdbuf);
+            free(stderrbuf);
             if (!eof_fd)
-                close(pipeto[1]);
-            if (!eof_stderr)
-                close(pipefrom[0]);
+                close(cstdin_fd);
+            if (!eof_cstderr)
+                close(cstdin_fd);
             if (lseek(fd, mf_body_off, SEEK_SET) == -1) {
                 syslog(LOG_ERR, "%s: Error when lseek'ing from '%s': %m",
                   cur_ext->name, msg_path);
@@ -987,10 +1053,10 @@ next:
 
             cur_ext->working = false;
             if (conf->mode == DAEMON_MODE) {
-                // Check the external's timeout (if it hsa one). If the timeout
+                // Check the external's timeout (if it has one). If the timeout
                 // hasn't been exceeded, then we have to give up on trying to
                 // send this messages via this, or other, externals - we need
-                // to wait for the timeout to be exceeded.  
+                // to wait for the timeout to be exceeded.
                 if (cur_ext->timeout != 0
                   && cur_ext->last_success + cur_ext->timeout > time(NULL)) {
                     goto fail;
@@ -1007,7 +1073,6 @@ preheaderfail:
     for (int j = 0; j < nargv; j += 1)
         free(argv[j]);
     free(argv);
-    free(stderr_buf);
 
     return false;
 }
@@ -1106,6 +1171,22 @@ void do_notify_success_cmd(Conf *conf, Status *status, int num_successes)
     system(cmd);
     free(successes_str);
     free(cmd);
+}
+
+
+
+//
+// Set 'fd' to be non-blocking, returning true on success or false on failure
+//
+
+bool set_nonblock(int fd)
+{
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1)
+        return false;
+    if (fcntl(fd, F_SETFL, flags || O_NONBLOCK) == -1)
+        return false;
+    return true;
 }
 
 
