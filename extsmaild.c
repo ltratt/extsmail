@@ -535,8 +535,10 @@ next_msg:
 
 
 //
-// Try sending an individual message. Returns true if successful, false
-// otherwise.
+// Read in the arguments passed to a message file.
+//
+// Returns true on success, false on failure. If successful, 'argv' points to an
+// array of argument strings of length 'nargv'.
 //
 
 bool read_argv(Conf *conf, const char *msg_path, int fd, char ***argv,
@@ -615,22 +617,16 @@ bool read_argv(Conf *conf, const char *msg_path, int fd, char ***argv,
 
 
 
-bool try_groups(Conf *conf, Group *groups, Status *status,
-                const char *msg_path, int fd)
+//
+// Try and find a matching group for 'fd'.
+//
+// Returns a group if successsful, or NULL on failure.
+//
+// NOTE: This function can arbitrarily move the current seek position of fd.
+//
+
+Group *find_group(Conf *conf, const char *msg_path, int fd)
 {
-    char **argv;
-    int nargv;
-    if (!read_argv(conf, msg_path, fd, &argv, &nargv))
-        return false;
-
-    // We now need to record where the actual message starts.
-    
-    off_t mf_body_off = lseek(fd, 0, SEEK_CUR);
-    if (mf_body_off == -1) {
-        syslog(LOG_ERR, "Error when lseek'ing from '%s'", msg_path);
-        goto preheaderfail;
-    }
-
     // Read in the messages header, doctoring it along the way to make it
     // suitable for being searched with regular expressions. The doctoring is
     // very simple. Individual headers are often split over multiple lines: we
@@ -639,7 +635,7 @@ bool try_groups(Conf *conf, Group *groups, Status *status,
     size_t dhb_buf_alloc = HEADER_BUF;
     char *dhd_buf = malloc(dhb_buf_alloc); // Doctored header buffer
     int dhd_buf_len = 0;
-    while (1) {
+    while (true) {
         char *line = fdrdline(fd);
         if (line == NULL) {
             syslog(LOG_ERR, "Corrupted message '%s'", msg_path);
@@ -684,11 +680,6 @@ bool try_groups(Conf *conf, Group *groups, Status *status,
         free(line);
     }
     dhd_buf[dhd_buf_len - 1] = 0; // Convert the last newline into a NUL
-    
-    if (lseek(fd, mf_body_off, SEEK_SET) == -1) {
-        syslog(LOG_ERR, "Error when lseek'ing from '%s': %m", msg_path);
-        goto fail;
-    }
     
     // Try and find a matching group and then send the message.
     
@@ -738,9 +729,45 @@ bool try_groups(Conf *conf, Group *groups, Status *status,
 next_group:
         group = group->next;
     }
+
+    free(dhd_buf);
+    return group;
+
+fail:
+    free(dhd_buf);
+    return NULL;
+}
+
+
+
+//
+// Try sending an individual message. Returns true if successful, false
+// otherwise.
+//
+
+bool try_groups(Conf *conf, Group *groups, Status *status,
+                const char *msg_path, int fd)
+{
+    char **argv;
+    int nargv;
+    if (!read_argv(conf, msg_path, fd, &argv, &nargv))
+        return false;
+
+    // We need to record where the actual message starts before calling
+    // find_group.
     
+    off_t mf_body_off = lseek(fd, 0, SEEK_CUR);
+    if (mf_body_off == -1) {
+        syslog(LOG_ERR, "Error when lseek'ing from '%s'", msg_path);
+        return NULL;
+    }
+    Group *group = find_group(conf, msg_path, fd);
     if (group == NULL) {
         syslog(LOG_ERR, "No matching group found for '%s'", msg_path);
+        goto fail;
+    }
+    if (lseek(fd, mf_body_off, SEEK_SET) == -1) {
+        syslog(LOG_ERR, "Error when lseek'ing from '%s': %m", msg_path);
         goto fail;
     }
 
@@ -1031,7 +1058,6 @@ next_group:
                 free(argv[j]);
             free(argv);
             free(stderrbuf);
-            free(dhd_buf);
             free(fdbuf);
             unlink(msg_path);
 
@@ -1081,8 +1107,6 @@ next:
     }
 
 fail:
-    free(dhd_buf);
-preheaderfail:
     for (int j = 0; j < nargv; j += 1)
         free(argv[j]);
     free(argv);
