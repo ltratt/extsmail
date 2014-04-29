@@ -632,7 +632,7 @@ Group *find_group(Conf *conf, const char *msg_path, int fd)
     // very simple. Individual headers are often split over multiple lines: we
     // merge such lines together.
 
-    size_t dhb_buf_alloc = HEADER_BUF;
+    ssize_t dhb_buf_alloc = HEADER_BUF;
     char *dhd_buf = malloc(dhb_buf_alloc); // Doctored header buffer
     int dhd_buf_len = 0;
     while (true) {
@@ -641,7 +641,7 @@ Group *find_group(Conf *conf, const char *msg_path, int fd)
             syslog(LOG_ERR, "Corrupted message '%s'", msg_path);
             goto err;
         }
-        size_t line_len = strlen(line);
+        ssize_t line_len = strlen(line);
 
         // If we've hit an empty line then we've reached the end of the headers.
 
@@ -758,12 +758,12 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
     // interleaved.
 
     // The temporary buffer we use for reading from fd.
-    size_t fdbuf_alloc = PTOC_BUFLEN;
+    ssize_t fdbuf_alloc = PTOC_BUFLEN;
     char *fdbuf = malloc(fdbuf_alloc);
-    size_t fdbuf_used = 0, fdbuf_off = 0;
+    ssize_t fdbuf_used = 0, fdbuf_off = 0;
 
     // The stderr buffer.
-    size_t stderrbuf_alloc = STDERR_BUF_ALLOC;
+    ssize_t stderrbuf_alloc = STDERR_BUF_ALLOC;
     *stderrbuf = malloc(stderrbuf_alloc);
 
     if (fdbuf == NULL || *stderrbuf == NULL) {
@@ -840,7 +840,7 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
             }
             else {
                 fdbuf_off = 0;
-                fdbuf_used = (size_t) nr;
+                fdbuf_used = nr;
             }
             continue;
         }
@@ -892,7 +892,7 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
                 close(cstderr_fd);
                 eof_cstderr = true;
             }
-            else if ((size_t) nr == stderrbuf_alloc - *stderrbuf_used) {
+            else if (nr == stderrbuf_alloc - *stderrbuf_used) {
                 stderrbuf_alloc += STDERR_BUF_ALLOC;
                 *stderrbuf = realloc(*stderrbuf, stderrbuf_alloc);
                 if (*stderrbuf == NULL) {
