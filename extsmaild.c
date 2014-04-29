@@ -539,8 +539,8 @@ next_msg:
 // otherwise.
 //
 
-bool try_groups(Conf *conf, Group *groups, Status *status,
-                const char *msg_path, int fd)
+bool read_argv(Conf *conf, const char *msg_path, int fd, char ***argv,
+               int *nargv)
 {
     // Check that the version string is one we can handle.
     
@@ -561,19 +561,19 @@ bool try_groups(Conf *conf, Group *groups, Status *status,
         return false;
     }
     const char *errstr = NULL;
-    int nargv = (int) strtonum(nas, 0, INT_MAX - 1, &errstr);
+    *nargv = (int) strtonum(nas, 0, INT_MAX - 1, &errstr);
     free(nas);
     if (errstr != NULL) {
         syslog(LOG_ERR, "Invalid number of arguments in '%s'", msg_path);
         return false;
     }
-    char **argv = malloc((nargv + 1) * sizeof(char *));
-    for (int i = 0; i < nargv; i++) {
+    *argv = malloc((*nargv + 1) * sizeof(char *));
+    for (int i = 0; i < *nargv; i++) {
         char *as = fdrdline(fd); // Size of argument
         if (as == NULL) {
             for (int j = 0; j < i; j += 1)
-                free(argv[j]);
-            free(argv);
+                free(*argv[j]);
+            free(*argv);
             syslog(LOG_ERR, "Corrupted message '%s'", msg_path);
             return false;
         }
@@ -582,8 +582,8 @@ bool try_groups(Conf *conf, Group *groups, Status *status,
         free(as);
         if (errstr != NULL) {
             for (int j = 0; j < i; j += 1)
-                free(argv[j]);
-            free(argv);
+                free(*argv[j]);
+            free(*argv);
             syslog(LOG_ERR, "Invalid argument size in '%s'", msg_path);
             return false;
         };
@@ -598,17 +598,30 @@ bool try_groups(Conf *conf, Group *groups, Status *status,
         if (nr < sa + 1 // Note this also captures nr == 0 and nr == -1
           || arg[sa] != '\n') { 
             for (int j = 0; j < i; j += 1)
-                free(argv[j]);
-            free(argv);
+                free(*argv[j]);
+            free(*argv);
             free(arg);
             syslog(LOG_ERR, "Corrupted message '%s'", msg_path);
             return false;
         }
         arg[sa] = '\0';
         
-        argv[i] = arg;
+        *argv[i] = arg;
     }
-    argv[nargv] = NULL;
+    *argv[*nargv] = NULL;
+
+    return true;
+}
+
+
+
+bool try_groups(Conf *conf, Group *groups, Status *status,
+                const char *msg_path, int fd)
+{
+    char **argv;
+    int nargv;
+    if (!read_argv(conf, msg_path, fd, &argv, &nargv))
+        return false;
 
     // We now need to record where the actual message starts.
     
