@@ -1320,7 +1320,10 @@ int main(int argc, char** argv)
     status.pid_llist = NULL;
 
     if (mode == DAEMON_MODE) {
-        daemon(1, 0);
+        if (daemon(1, 0) == -1) {
+            syslog(LOG_CRIT, "failed to become daemon");
+            exit(1);
+        }
         
         conf->mode = DAEMON_MODE;
 
