@@ -537,12 +537,12 @@ next_msg:
 //
 // Read in the arguments passed to a message file.
 //
-// Returns true on success, false on failure. If successful, 'argv' points to an
-// array of argument strings of length 'nargv'.
+// Returns true on success, false on failure. If successful, 'rargv' points to an
+// array of argument strings of length 'rnargv'.
 //
 
-bool read_argv(Conf *conf, const char *msg_path, int fd, char ***argv,
-               int *nargv)
+bool read_argv(Conf *conf, const char *msg_path, int fd, char ***rargv,
+               int *rnargv)
 {
     // Check that the version string is one we can handle.
     
@@ -563,19 +563,19 @@ bool read_argv(Conf *conf, const char *msg_path, int fd, char ***argv,
         return false;
     }
     const char *errstr = NULL;
-    *nargv = (int) strtonum(nas, 0, INT_MAX - 1, &errstr);
+    int nargv = (int) strtonum(nas, 0, INT_MAX - 1, &errstr);
     free(nas);
     if (errstr != NULL) {
         syslog(LOG_ERR, "Invalid number of arguments in '%s'", msg_path);
         return false;
     }
-    *argv = malloc((*nargv + 1) * sizeof(char *));
-    for (int i = 0; i < *nargv; i++) {
+    char **argv = malloc((nargv + 1) * sizeof(char *));
+    for (int i = 0; i < nargv; i++) {
         char *as = fdrdline(fd); // Size of argument
         if (as == NULL) {
             for (int j = 0; j < i; j += 1)
-                free(*argv[j]);
-            free(*argv);
+                free(argv[j]);
+            free(argv);
             syslog(LOG_ERR, "Corrupted message '%s'", msg_path);
             return false;
         }
@@ -584,8 +584,8 @@ bool read_argv(Conf *conf, const char *msg_path, int fd, char ***argv,
         free(as);
         if (errstr != NULL) {
             for (int j = 0; j < i; j += 1)
-                free(*argv[j]);
-            free(*argv);
+                free(argv[j]);
+            free(argv);
             syslog(LOG_ERR, "Invalid argument size in '%s'", msg_path);
             return false;
         };
@@ -600,17 +600,20 @@ bool read_argv(Conf *conf, const char *msg_path, int fd, char ***argv,
         if (nr < sa + 1 // Note this also captures nr == 0 and nr == -1
           || arg[sa] != '\n') { 
             for (int j = 0; j < i; j += 1)
-                free(*argv[j]);
-            free(*argv);
+                free(argv[j]);
+            free(argv);
             free(arg);
             syslog(LOG_ERR, "Corrupted message '%s'", msg_path);
             return false;
         }
         arg[sa] = '\0';
         
-        *argv[i] = arg;
+        argv[i] = arg;
     }
-    *argv[*nargv] = NULL;
+    argv[nargv] = NULL;
+
+    *rargv = argv;
+    *rnargv = nargv;
 
     return true;
 }
@@ -744,14 +747,14 @@ err:
 // Send the message to the child sendmail process, by copying the contents of
 // 'fd' from the current seek position to the pipe 'cstdin_fd'.
 // 
-// Returns true on success, false on failure. 'stderrbuf' will point to a
+// Returns true on success, false on failure. 'rstderrbuf' will point to a
 // malloc'd area of memory which, if the function is successful, will contain
-// any contents from the child process's stderr (if unsuccessful, its contents
-// are undefined).
+// 'rstderrbuf_used' bytes read from the child process's stderr (if unsuccessful,
+// its contents are undefined, as are those of 'rstderrbuf_used').
 //
 
 bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr_fd, int cstdin_fd,
-                    char **stderrbuf, ssize_t *stderrbuf_used)
+                    char **rstderrbuf, ssize_t *rstderrbuf_used)
 {
     // In the following while loop we feed the message into the child sendmail
     // process, and read its stderr output. This reading and writing can be
@@ -764,9 +767,10 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
 
     // The stderr buffer.
     ssize_t stderrbuf_alloc = STDERR_BUF_ALLOC;
-    *stderrbuf = malloc(stderrbuf_alloc);
+    char *stderrbuf = malloc(stderrbuf_alloc);
+    ssize_t stderrbuf_used = 0;
 
-    if (fdbuf == NULL || *stderrbuf == NULL) {
+    if (fdbuf == NULL || stderrbuf == NULL) {
         syslog(LOG_CRIT, "write_to_child: malloc: %m");
         exit(1);
     }
@@ -877,8 +881,8 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
         // Read the child's stderr (if appropriate).
 
         if (!eof_cstderr && fds[POLL_CSTDERR].revents & POLLIN) {
-            ssize_t nr = read(cstderr_fd, *stderrbuf + *stderrbuf_used,
-              stderrbuf_alloc - *stderrbuf_used);
+            ssize_t nr = read(cstderr_fd, stderrbuf + stderrbuf_used,
+              stderrbuf_alloc - stderrbuf_used);
             if (nr == -1) {
                 if (errno == EAGAIN || errno == EINTR)
                     continue;
@@ -892,15 +896,15 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
                 close(cstderr_fd);
                 eof_cstderr = true;
             }
-            else if (nr == stderrbuf_alloc - *stderrbuf_used) {
+            else if (nr == stderrbuf_alloc - stderrbuf_used) {
                 stderrbuf_alloc += STDERR_BUF_ALLOC;
-                *stderrbuf = realloc(*stderrbuf, stderrbuf_alloc);
-                if (*stderrbuf == NULL) {
+                stderrbuf = realloc(stderrbuf, stderrbuf_alloc);
+                if (stderrbuf == NULL) {
                     syslog(LOG_CRIT, "try_groups: realloc: %m");
                     exit(1);
                 }
             }
-            *stderrbuf_used += nr;
+            stderrbuf_used += nr;
         }
     }
 
@@ -908,10 +912,10 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
     // sometimes have random newline chars at the end of line - this loop
     // chomps them off.
 
-    while (*stderrbuf_used > 0
-      && (*stderrbuf[*stderrbuf_used - 1] == '\n'
-      || *stderrbuf[*stderrbuf_used - 1] == '\r'))
-        *stderrbuf_used -= 1;
+    while (stderrbuf_used > 0
+      && (stderrbuf[stderrbuf_used - 1] == '\n'
+      || stderrbuf[stderrbuf_used - 1] == '\r'))
+        stderrbuf_used -= 1;
 
     bool rtn = true;
     goto cleanup;
@@ -926,6 +930,9 @@ cleanup:
         close(cstdin_fd);
     if (!eof_cstderr)
         close(cstderr_fd);
+
+    *rstderrbuf = stderrbuf;
+    *rstderrbuf_used = stderrbuf_used;
 
     return rtn;
 }
