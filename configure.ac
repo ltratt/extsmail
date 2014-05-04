@@ -19,7 +19,12 @@
 # IN THE SOFTWARE.
 
 
-AC_INIT([extsmail], EXTSMAIL_VERSION)
+AC_INIT([extsmail], [1.8])
+AC_PREREQ([2.68])
+AC_CONFIG_SRCDIR([src/extsmail.c])
+AC_CONFIG_AUX_DIR([build-aux])
+
+AM_INIT_AUTOMAKE([1.11 foreign -Wall -Werror])
 
 ################################################################################
 # Generic initialization
@@ -67,11 +72,11 @@ esac
 
 AH_TEMPLATE(HAVE_STRTONUM, [Define if your platform has the strtonum function.])
 AC_CHECK_FUNC(strtonum, [AC_DEFINE(HAVE_STRTONUM)], [AC_SUBST(COMPAT_STRTONUM,
-                                                     compat/strtonum.o)])
+                                                     strtonum.o)])
 
 ################################################################################
 # Output
 #
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile])
 AC_OUTPUT

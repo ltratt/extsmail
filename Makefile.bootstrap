@@ -1,3 +1,0 @@
-configure: configure.ac
-	autoconf
-	autoheader
