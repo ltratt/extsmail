@@ -878,6 +878,10 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
             }
         }
 
+        // Check if the child's stderr was closed
+        if (fds[POLL_CSTDERR].revents & POLLHUP)
+            eof_cstderr = true;
+
         // Read the child's stderr (if appropriate).
 
         if (!eof_cstderr && fds[POLL_CSTDERR].revents & POLLIN) {
@@ -1256,7 +1260,7 @@ bool set_nonblock(int fd)
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1)
         return false;
-    if (fcntl(fd, F_SETFL, flags || O_NONBLOCK) == -1)
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
         return false;
     return true;
 }
