@@ -1227,7 +1227,10 @@ void do_notify_failure_cmd(Conf *conf, Status *status)
     }
 
     char *cmd = str_replace(conf->notify_failure_cmd, "${TIME}", time_fmted);
-    system(cmd);
+    int res = system(cmd);
+    if (res != 0)
+        syslog(LOG_ERR, "Error in do_notify_failure_cmd running: %s", cmd);
+
     free(cmd);
     free(time_fmted);
 }
@@ -1244,7 +1247,10 @@ void do_notify_success_cmd(Conf *conf, Status *status, int num_successes)
         return;
 
     char *cmd = str_replace(conf->notify_success_cmd, "${SUCCESSES}", successes_str);
-    system(cmd);
+    int res = system(cmd);
+    if (res != 0)
+        syslog(LOG_ERR, "Error in do_notify_success_cmd running: %s", cmd);
+
     free(successes_str);
     free(cmd);
 }
