@@ -67,7 +67,7 @@ esac
 
 AH_TEMPLATE(HAVE_STRTONUM, [Define if your platform has the strtonum function.])
 AC_CHECK_FUNC(strtonum, [AC_DEFINE(HAVE_STRTONUM)], [AC_SUBST(COMPAT_STRTONUM,
-                                                     compat/strtonum.c)])
+                                                     compat/strtonum.o)])
 
 ################################################################################
 # Output
