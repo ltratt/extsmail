@@ -1437,7 +1437,9 @@ int main(int argc, char** argv)
                 // is, we still need to read from it so that the buffer doesn't
                 // fill up.
                 char buf[INOTIFY_BUFLEN];
-                read(fd, buf, INOTIFY_BUFLEN);
+                int res = read(fd, buf, INOTIFY_BUFLEN);
+                if (res == -1)
+                    syslog(LOG_ERR, "Error when reading from inotify buffer");
             }
 #else
             // If no other support is available, we fall back on polling alone.
