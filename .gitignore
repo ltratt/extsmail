@@ -14,3 +14,8 @@ externals_parser.tab.h
 externals_tokenizer.c
 extsmail
 extsmaild
+Makefile.in
+alocal.m4
+build-aux
+src/Makefile.in
+aclocal.m4
