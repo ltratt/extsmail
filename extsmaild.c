@@ -295,6 +295,7 @@ bool cycle(Conf *conf, Group *groups, Status *status)
     DIR *dirp = opendir(msgs_path);
     if (dirp == NULL) {
         syslog(LOG_ERR, "When opening spool dir: %m");
+        free(msgs_path);
         return false;
     }
     
