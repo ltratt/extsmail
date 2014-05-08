@@ -847,7 +847,6 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
                 fdbuf_off = 0;
                 fdbuf_used = nr;
             }
-            continue;
         }
 
         // Write data to the child process (if appropriate).
