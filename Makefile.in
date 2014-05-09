@@ -1,6 +1,7 @@
 CC=@CC@
 CFLAGS=@CFLAGS@
 LIBS=@LIBS@
+LDFLAGS=@LDFLAGS@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
@@ -13,14 +14,14 @@ all: extsmail extsmaild
 EXTSMAIL_OBJS = conf_parser.tab.o conf_tokenizer.o extsmail.o common.o
 
 extsmail: ${EXTSMAIL_OBJS}
-	${CC} -o extsmail ${EXTSMAIL_OBJS}
+	${CC} -o extsmail ${EXTSMAIL_OBJS} ${LDFLAGS}
 
 
 EXTSMAILD_OBJS = conf_parser.tab.o conf_tokenizer.o externals_parser.tab.o \
         externals_tokenizer.o extsmaild.o common.o @COMPAT_STRTONUM@
 
 extsmaild: ${EXTSMAILD_OBJS}
-	${CC} -o extsmaild ${EXTSMAILD_OBJS}
+	${CC} -o extsmaild ${EXTSMAILD_OBJS} ${LDFLAGS}
 
 
 conf_parser.tab.c: conf_parser.y
