@@ -62,6 +62,9 @@ case `uname -s` in
   Linux* ) CFLAGS="$CFLAGS -D_POSIX_C_SOURCE=2";;
 esac
 
+# set hardening flags
+
+LDFLAGS="$LDFLAGS -Wl,-z,relro"
 
 # strtonum
 
