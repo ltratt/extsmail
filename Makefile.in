@@ -57,7 +57,7 @@ install: all
 clean:
 	rm -f extsmail extsmaild ${EXTSMAIL_OBJS} ${EXTSMAILD_OBJS} \
 	  conf_parser.tab.[ch] externals_parser.tab.[ch] conf_tokenizer.c \
-	  externals_tokenizer.c ${MAN_PAGES}
+	  externals_tokenizer.c
 
 
 distclean: clean
