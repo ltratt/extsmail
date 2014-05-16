@@ -106,9 +106,13 @@ int try_conf_path(const char *path)
         return -1;
     }
     
-    if (yycparse() != 0)
+    if (yycparse() != 0) {
+        fclose(yycin);
         return -1;
-    
+    }
+
+    fclose(yycin);
+
     return 0;
 }
 
