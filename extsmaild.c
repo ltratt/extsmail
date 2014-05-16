@@ -266,8 +266,11 @@ int try_externals_path(const char *path)
     free(cnd_path);
     
     if (yyeparse() != 0) {
+        fclose(yyein);
         return -1;
     }
+
+    fclose(yyein);
     
     return 0;
 }
