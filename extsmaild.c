@@ -667,20 +667,12 @@ Group *find_group(Conf *conf, const char *msg_path, int fd)
         if (dhd_buf_len > 0 && (line[0] == ' ' || line[0] == '\t')) {
             // This line began with space / tab chars, which means it's a
             // continuation of the header in the previous line.
-
-            start = 0;
-            while (line[start] == ' ' || line[start] == '\t')
-                start += 1;
             
-            memcpy(dhd_buf + dhd_buf_len - 1, line + start, line_len - start);
-            dhd_buf[dhd_buf_len + line_len] = '\n';
-            dhd_buf_len += line_len + 1;
+            dhd_buf_len -= 1;
         }
-        else {
-            memcpy(dhd_buf + dhd_buf_len, line, line_len);
-            dhd_buf[dhd_buf_len + line_len] = '\n';
-            dhd_buf_len += line_len + 1;
-        }
+        memcpy(dhd_buf + dhd_buf_len, line, line_len);
+        dhd_buf[dhd_buf_len + line_len] = '\n';
+        dhd_buf_len += line_len + 1;
         free(line);
     }
     dhd_buf[dhd_buf_len - 1] = 0; // Convert the last newline into a NUL
