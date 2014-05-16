@@ -50,7 +50,7 @@ install: all
 	install -c -m 444 extsmail.conf.5 \
 	  ${DESTDIR}${prefix}/man/man5/extsmail.conf.5
 	install -c -m 444 extsmail.externals.5 \
-      ${DESTDIR}${prefix}/man/man5/extsmail.externals.5
+	  ${DESTDIR}${prefix}/man/man5/extsmail.externals.5
 	install -c -m 444 extsmaild.1 ${DESTDIR}${prefix}/man/man1/extsmaild.1
 
 
@@ -61,13 +61,12 @@ clean:
 
 
 distclean: clean
-	rm -rf configure Makefile Config.h Config.h.in autom4te.cache config.log \
-	  config.status
+	rm -rf Makefile Config.h autom4te.cache config.log config.status
 
 
-distrib:
+dist:
 	${MAKE} distclean
 	${MAKE} -f Makefile.bootstrap
 	@read -p 'extsmail version: ' v; mkdir extsmail-$$v; \
-      cp -r `ls | grep -E -v "(autom4te.cache)|(Makefile.bootstrap)|(extsmail-$$v)"` extsmail-$$v; \
-      tar cfz extsmail-$$v.tar.gz extsmail-$$v; rm -rf extsmail-$$v
+	  cp -r `ls | grep -E -v "(autom4te.cache)|(Makefile.bootstrap)|(extsmail-$$v)"` extsmail-$$v; \
+	  tar cfz extsmail-$$v.tar.gz extsmail-$$v; rm -rf extsmail-$$v
