@@ -93,7 +93,6 @@ Conf *read_conf()
 void free_conf(Conf *conf)
 {
     assert(NULL != conf);
-    printf("free_conf(%x)\n", conf);
     free(conf->spool_dir);
     free(conf);
 }
@@ -119,9 +118,13 @@ int try_conf_path(const char *path)
         return -1;
     }
     
-    if (yycparse() != 0)
+    if (yycparse() != 0) {
+        fclose(yycin);
         return -1;
-    
+    }
+
+    fclose(yycin);
+
     return 0;
 }
 
