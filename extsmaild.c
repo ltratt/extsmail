@@ -176,6 +176,7 @@ void obtain_lock(Conf *conf)
 void lock_exit()
 {
     unlink(lock_path);
+    free(lock_path);
     flock(lock_fd, LOCK_UN);
     close(lock_fd);
 }
