@@ -1315,7 +1315,7 @@ int main(int argc, char** argv)
     // Check that everything to do with the spool dir is OK.
 
     if (!check_spool_dir(conf))
-        exit(1);
+	goto error;
 
     Status status;
     status.spool_loc = 0;
@@ -1326,7 +1326,7 @@ int main(int argc, char** argv)
     if (mode == DAEMON_MODE) {
         if (daemon(1, 0) == -1) {
             syslog(LOG_CRIT, "failed to become daemon");
-            exit(1);
+            goto error;
         }
         
         conf->mode = DAEMON_MODE;
@@ -1335,7 +1335,7 @@ int main(int argc, char** argv)
         if (asprintf(&msgs_path, "%s%s%s", conf->spool_dir, DIR_SEP, MSGS_DIR)
           == -1) {
             syslog(LOG_CRIT, "main: asprintf: unable to allocate memory");
-            exit(1);
+            goto error;
         }
 
         // On platforms that support an appropriate mechanism (such as kqueue
@@ -1349,13 +1349,13 @@ int main(int argc, char** argv)
         int kq = kqueue();
         if (kq == -1) {
             syslog(LOG_CRIT, "main: kqueue: %m");
-            exit(1);
+            goto error;
         }
 
         int smf = open(msgs_path, O_RDONLY);
         if (smf == -1) {
             syslog(LOG_CRIT, "When opening '%s': %m", msgs_path);
-            exit(1);
+            goto error;
         }
 
         struct kevent changes;
@@ -1369,12 +1369,12 @@ int main(int argc, char** argv)
         int fd = inotify_init();
         if (fd < 0) {
             syslog(LOG_CRIT, "main: inotify_init: %m");
-            exit(1);
+            goto error;
         }
 
         if (inotify_add_watch(fd, msgs_path, IN_CLOSE_WRITE) < 0) {
             syslog(LOG_CRIT, "main: inotify_add_watch: %m");
-            exit(1);
+            goto error;
         }
 #endif
 
@@ -1458,11 +1458,17 @@ int main(int argc, char** argv)
         if (!cycle(conf, groups, &status)) {
             do_notify_failure_cmd(conf, &status);
             closelog();
+            free_conf(conf);
             return 1;
         }
 
         closelog();
+        free_conf(conf);
 
         return 0;
     }
+
+ error:
+    free_conf(conf);
+    exit(1);
 }

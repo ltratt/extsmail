@@ -31,6 +31,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "conf.h"
 #include "common.h"
@@ -84,6 +85,17 @@ Conf *read_conf()
     return conf;
 }
 
+
+//
+// Free configuration
+//
+
+void free_conf(Conf *conf)
+{
+    assert(NULL != conf);
+    free(conf->spool_dir);
+    free(conf);
+}
 
 
 //
