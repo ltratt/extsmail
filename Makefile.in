@@ -4,7 +4,9 @@ LIBS=@LIBS@
 LDFLAGS=@LDFLAGS@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
 bindir = @bindir@
+mandir = @mandir@
 INSTALL = @INSTALL@
 
 
@@ -44,14 +46,14 @@ install: all
 	install -d ${DESTDIR}${bindir}
 	install -c -m 555 extsmail ${DESTDIR}${bindir}
 	install -c -m 555 extsmaild ${DESTDIR}${bindir}
-	install -d ${DESTDIR}${prefix}/man/man1
-	install -d ${DESTDIR}${prefix}/man/man5
-	install -c -m 444 extsmail.1 ${DESTDIR}${prefix}/man/man1/extsmail.1
+	install -d ${DESTDIR}${mandir}/man1
+	install -d ${DESTDIR}${mandir}/man5
+	install -c -m 444 extsmail.1 ${DESTDIR}${mandir}/man1/extsmail.1
 	install -c -m 444 extsmail.conf.5 \
-	  ${DESTDIR}${prefix}/man/man5/extsmail.conf.5
+	  ${DESTDIR}${mandir}/man5/extsmail.conf.5
 	install -c -m 444 extsmail.externals.5 \
-      ${DESTDIR}${prefix}/man/man5/extsmail.externals.5
-	install -c -m 444 extsmaild.1 ${DESTDIR}${prefix}/man/man1/extsmaild.1
+          ${DESTDIR}${mandir}/man5/extsmail.externals.5
+	install -c -m 444 extsmaild.1 ${DESTDIR}${mandir}/man1/extsmaild.1
 
 
 clean:
