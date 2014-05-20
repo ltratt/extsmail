@@ -50,9 +50,9 @@ Match *add_match(Match_Type, const char *);
 %union {
     const char *str;
     time_t time;
-    Match *match;
-    External *external;
-    Group *group;
+    struct _mat *match;
+    struct _ext *external;
+    struct _grp *group;
 }
 
 %token TGROUP
