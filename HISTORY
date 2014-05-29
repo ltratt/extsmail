@@ -2,6 +2,20 @@
   extsmail history
 ============================================================================
 
+  extsmail 1.8 (2014-05-29)
+
+* Fix bug which caused extsmaild to consume larger amounts of CPU than
+  strictly necessary (a normal user should now be able to run extsmaild for
+  several days before exceeding 1 second of CPU usage).
+
+* Fix reporting of sent mail on Linux (which previously sent mail correctly,
+  but incorrectly reported failure even when the send was successful).
+
+* Various fixes to make OS packager's lives easier.
+
+* Significant code reorganisation to improve readability.
+
+
   extsmail 1.7 (2014-03-12)
 
 * Several minor bug fixes spotted by static analysis tools (including
