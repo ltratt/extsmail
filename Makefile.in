@@ -70,6 +70,6 @@ distclean: clean
 distrib:
 	${MAKE} distclean
 	${MAKE} -f Makefile.bootstrap
-	@read -p 'extsmail version: ' v; mkdir extsmail-$$v; \
+	@read v?'extsmail version: '; mkdir extsmail-$$v; \
       cp -r `ls | grep -E -v "(autom4te.cache)|(Makefile.bootstrap)|(extsmail-$$v)"` extsmail-$$v; \
       tar cfz extsmail-$$v.tar.gz extsmail-$$v; rm -rf extsmail-$$v
