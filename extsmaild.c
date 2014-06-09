@@ -819,6 +819,17 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
             goto err;
         }
 
+        // Check if any of the files we're reading/writing from have got
+        // irrecoverable problems. Note that POLL_FD can't suffer from POLLHUP
+        // (since it's write only) and that we catch POLLHUP on POLL_CSTDERR
+        // later.
+
+        assert(!fds[POLL_FD].revents & POLLHUP);
+        if (fds[POLL_FD].revents & (POLLERR|POLLNVAL)
+          || fds[POLL_CSTDIN].revents & (POLLERR|POLLHUP|POLLNVAL)
+          || fds[POLL_CSTDERR].revents & (POLLERR|POLLNVAL))
+            goto err;
+
         // Read in data from fd (if appropriate)
 
         if (!eof_fd && fdbuf_used == 0 && fds[POLL_FD].revents & POLLIN) {
