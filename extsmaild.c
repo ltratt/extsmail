@@ -824,7 +824,7 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
         // (since it's write only) and that we catch POLLHUP on POLL_CSTDERR
         // later.
 
-        assert(!fds[POLL_FD].revents & POLLHUP);
+        assert(!(fds[POLL_FD].revents & POLLHUP));
         if (fds[POLL_FD].revents & (POLLERR|POLLNVAL)
           || fds[POLL_CSTDIN].revents & (POLLERR|POLLHUP|POLLNVAL)
           || fds[POLL_CSTDERR].revents & (POLLERR|POLLNVAL))
