@@ -825,10 +825,12 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
         // later.
 
         assert(!(fds[POLL_FD].revents & POLLHUP));
-        if (fds[POLL_FD].revents & (POLLERR|POLLNVAL)
-          || fds[POLL_CSTDIN].revents & (POLLERR|POLLHUP|POLLNVAL)
-          || fds[POLL_CSTDERR].revents & (POLLERR|POLLNVAL))
-            goto err;
+        if (fds[POLL_FD].revents & (POLLERR|POLLNVAL))
+            goto fd_err;
+        if (fds[POLL_CSTDIN].revents & (POLLERR|POLLHUP|POLLNVAL))
+            goto cstdin_err;
+        if (fds[POLL_CSTDERR].revents & (POLLERR|POLLNVAL))
+            goto cstderr_err;
 
         // Read in data from fd (if appropriate)
 
@@ -837,9 +839,7 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
             if (nr == -1) {
                 if (errno == EAGAIN || errno == EINTR)
                     continue;
-                syslog(LOG_ERR, "%s: Error when reading from '%s'",
-                  cur_ext->name, msg_path);
-                goto err;
+                goto fd_err;
             }
             assert(nr >= 0);
             last_io_time = time(NULL);
@@ -864,17 +864,13 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
                 if (tnw == -1) {
                     if (errno == EAGAIN || errno == EINTR)
                         break;
-                    syslog(LOG_ERR, "%s: Error when writing to '%s'"
-                      " process", cur_ext->name, cur_ext->sendmail);
-                    goto err;
+                    goto cstdin_err;
                 }
                 assert(tnw >= 0);
                 if (tnw == 0) {
                     // The write pipe has been closed, but we still have
                     // data to write out.
-                    syslog(LOG_ERR, "%s: Received EOF when writing to '%s'"
-                      " process", cur_ext->name, cur_ext->sendmail);
-                    goto err;
+                    goto cstdin_err;
                 }
                 fdbuf_off += tnw;
                 assert(fdbuf_off <= fdbuf_used);
@@ -897,9 +893,7 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
             if (nr == -1) {
                 if (errno == EAGAIN || errno == EINTR)
                     continue;
-                syslog(LOG_ERR, "%s: When reading stderr from '%s': %m",
-                  cur_ext->name, cur_ext->sendmail);
-                goto err;
+                goto cstderr_err;
             }
             assert(nr >= 0);
             last_io_time = time(NULL);
@@ -930,6 +924,21 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
 
     bool rtn = true;
     goto cleanup;
+
+fd_err:
+    syslog(LOG_ERR, "%s: Error when reading from '%s'",
+      cur_ext->name, msg_path);
+    goto err;
+
+cstdin_err:
+    syslog(LOG_ERR, "%s: Error when writing to '%s' process",
+      cur_ext->name, cur_ext->sendmail);
+    goto err;
+
+cstderr_err:
+    syslog(LOG_ERR, "%s: When reading stderr from '%s': %m",
+      cur_ext->name, cur_ext->sendmail);
+    goto err;
 
 err:
     rtn = false;
