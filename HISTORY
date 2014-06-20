@@ -2,6 +2,13 @@
   extsmail history
 ============================================================================
 
+  extsmail 1.8 (2014-06-20)
+
+* Fix bug which could temporarily cause undue CPU to be consumed when a
+  large file send was cut off in the middle. This didn't prevent mail being
+  sent correctly in the end, but was ugly.
+
+
   extsmail 1.8 (2014-05-29)
 
 * Fix bug which caused extsmaild to consume larger amounts of CPU than
