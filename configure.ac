@@ -39,7 +39,7 @@ AC_GNU_SOURCE
 # Function / feature checks
 #
 
-CFLAGS="$CFLAGS -std=c99 -Wall -Werror"
+CFLAGS="$CFLAGS -std=c99 -Wall -Werror -pedantic"
 
 
 # kqueue (*BSD)
