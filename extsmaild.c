@@ -667,7 +667,6 @@ Group *find_group(Conf *conf, const char *msg_path, int fd)
             }
         }
 
-        int start;
         if (dhd_buf_len > 0 && (line[0] == ' ' || line[0] == '\t')) {
             // This line began with space / tab chars, which means it's a
             // continuation of the header in the previous line.
