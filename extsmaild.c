@@ -766,6 +766,8 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
     char *stderrbuf = malloc(stderrbuf_alloc);
     ssize_t stderrbuf_used = 0;
 
+    bool eof_fd = false, eof_cstderr = false;
+
     if (fdbuf == NULL || stderrbuf == NULL) {
         syslog(LOG_CRIT, "write_to_child: malloc: %m");
         exit(1);
@@ -779,7 +781,6 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
         goto err;
     }
 
-    bool eof_fd = false, eof_cstderr = false;
     time_t last_io_time = time(NULL);
     while (!eof_fd || !eof_cstderr) {
         // The 3 defines below must match the order that the descriptors
