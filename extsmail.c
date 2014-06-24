@@ -88,7 +88,7 @@ int main(int argc, char** argv)
     if ((sf = fdopen(sfd, "w")) == NULL)
         err(1, "main: fdopen");
 
-#   define SPOOL_WRITE(fmt, args...) if (fprintf(sf, fmt, ##args) == -1) \
+#   define SPOOL_WRITE(fmt, ...) if (fprintf(sf, fmt, __VA_ARGS__) == -1) \
         err(1, "%s: When writing to spool file", sp)
 
     // Write out the file format version number
