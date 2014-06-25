@@ -39,7 +39,7 @@ AC_GNU_SOURCE
 # Function / feature checks
 #
 
-CFLAGS="$CFLAGS -std=c99 -Wall -pedantic"
+CFLAGS="$CFLAGS -std=c99 -Wall -Werror -pedantic"
 
 # gcc (at least 4.9) emits
 #   "warning: ISO C does not support the ‘%m’ gnu_printf format"
