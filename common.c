@@ -85,6 +85,16 @@ Conf *read_conf()
 }
 
 
+//
+// Free configuration
+//
+
+void free_conf(Conf *conf)
+{
+    free(conf->spool_dir);
+    free(conf);
+}
+
 
 //
 // Attempts to read a configuration file at 'path'; returns 0 on success, 1 if a
@@ -112,6 +122,7 @@ int try_conf_path(const char *path)
     }
 
     fclose(yycin);
+    yyclex_destroy();
 
     return 0;
 }
