@@ -1468,6 +1468,8 @@ int main(int argc, char** argv)
                     unsuccessful_wait = MAX_POLL_WAIT;
             }
         }
+
+        free_conf(conf); // XXX should be done in the exit handler
     }
     else {
         conf->mode = BATCH_MODE;
@@ -1482,6 +1484,8 @@ int main(int argc, char** argv)
         }
 
         closelog();
+
+        free_conf(conf);
 
         return 0;
     }
