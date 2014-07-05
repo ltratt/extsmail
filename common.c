@@ -52,6 +52,7 @@ bool check_dir(const char *);
 //
 
 extern int yycparse(void);
+extern void yyclex_destroy(void);
 FILE *yycin;
 Conf *conf; // Global variable needed for Yacc. Sigh.
 
