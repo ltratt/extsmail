@@ -154,7 +154,7 @@ externals : external externals
 external : TEXTERNAL TID
         {
             _wk_external = malloc(sizeof(External));
-            _wk_external->name = $<str>2;
+            _wk_external->name = (char *)$<str>2;
             _wk_external->sendmail = NULL;
             _wk_external->last_success = 0;
             _wk_external->timeout = 0;
@@ -244,8 +244,8 @@ defn  : TID TASSIGN TSTRING
                     }
                     argv[nargv++] = arg;
                 }
-                _wk_external->sendmail = $<str>3;
-                _wk_external->sendmail_argv = (const char**) argv;
+                _wk_external->sendmail = (char *)$<str>3;
+                _wk_external->sendmail_argv = argv;
                 _wk_external->sendmail_nargv = nargv;
             }
             else if (strcmp($<str>1, "timeout") == 0) {
@@ -284,7 +284,7 @@ defn  : TID TASSIGN TSTRING
 Match *add_match(Match_Type type, const char *ptn)
 {
     Match *m = malloc(sizeof(Match));
-    m->regex = ptn;
+    m->regex = (char *)ptn;
     m->type = type;
     int rtn = regcomp(&m->preg, ptn,
       REG_EXTENDED | REG_ICASE | REG_NOSUB | REG_NEWLINE);
