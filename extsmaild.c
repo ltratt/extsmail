@@ -294,8 +294,8 @@ static void free_groups(Group *group)
 
     free_matches(group->matches);
     free_externals(group->externals);
-
     free(group);
+
     free_groups(next);
 }
 
