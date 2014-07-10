@@ -223,7 +223,7 @@ Group *read_externals(void)
             exit(1);
     }
 
-    err(1, "Can't find a valid externals file");
+    return NULL;
 }
 
 
@@ -1401,6 +1401,8 @@ int main(int argc, char** argv)
     Conf *conf = read_conf();
 
     Group *groups = read_externals();
+    if (groups == NULL)
+	err(1, "Can't find a valid externals file");
     
     obtain_lock(conf);
 
