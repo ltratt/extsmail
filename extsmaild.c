@@ -299,7 +299,9 @@ static void free_groups(Group *group)
     free_groups(next);
 }
 
+#if HAVE_YYLEX_DESTROY
 extern void yyelex_destroy(void);
+#endif
 
 //
 // Attempts to read a configuration file at 'path'; returns 0 on success, 1 if a
@@ -345,7 +347,9 @@ int try_externals_path(const char *path)
     }
 
     fclose(yyein);
+#if HAVE_YYLEX_DESTROY
     yyelex_destroy();
+#endif
     
     return 0;
 }

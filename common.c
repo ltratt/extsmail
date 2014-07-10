@@ -52,7 +52,9 @@ bool check_dir(const char *);
 //
 
 extern int yycparse(void);
+#if HAVE_YYLEX_DESTROY
 extern void yyclex_destroy(void);
+#endif
 FILE *yycin;
 Conf *conf; // Global variable needed for Yacc. Sigh.
 
@@ -123,7 +125,9 @@ int try_conf_path(const char *path)
     }
 
     fclose(yycin);
+#if HAVE_YYLEX_DESTROY
     yyclex_destroy();
+#endif
 
     return 0;
 }
