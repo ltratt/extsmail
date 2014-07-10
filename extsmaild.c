@@ -224,6 +224,9 @@ Group *read_externals(void)
     }
 
     err(1, "Can't find a valid externals file");
+
+    // Not reached
+    return NULL;
 }
 
 
