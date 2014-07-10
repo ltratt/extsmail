@@ -52,6 +52,9 @@ bool check_dir(const char *);
 //
 
 extern int yycparse(void);
+#if HAVE_YYLEX_DESTROY
+extern void yyclex_destroy(void);
+#endif
 FILE *yycin;
 Conf *conf; // Global variable needed for Yacc. Sigh.
 
@@ -85,6 +88,16 @@ Conf *read_conf()
 }
 
 
+//
+// Free configuration
+//
+
+void free_conf(Conf *conf)
+{
+    free(conf->spool_dir);
+    free(conf);
+}
+
 
 //
 // Attempts to read a configuration file at 'path'; returns 0 on success, 1 if a
@@ -112,6 +125,9 @@ int try_conf_path(const char *path)
     }
 
     fclose(yycin);
+#if HAVE_YYLEX_DESTROY
+    yyclex_destroy();
+#endif
 
     return 0;
 }

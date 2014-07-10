@@ -25,6 +25,7 @@
 #define VERSION1_ID "v1"
 
 Conf *read_conf();
+void free_conf(Conf *);
 bool check_spool_dir(Conf *);
 
 char *rdline(FILE *);

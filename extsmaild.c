@@ -57,7 +57,7 @@
 #include "common.h"
 #include "externals.h"
 
-
+// #define DBG_LEAKS 1
 
 const char *EXTERNALS_PATHS[] = {"~/.extsmail/externals",
   "/etc/extsmail/externals", NULL};
@@ -114,6 +114,7 @@ typedef struct {
 extern char* __progname;
 
 Group *read_externals(void);
+static void free_groups(Group *);
 int try_externals_path(const char *);
 bool cycle(Conf *, Group *, Status *);
 bool try_groups(Conf *, Group *, Status *, const char *, int);
@@ -222,10 +223,85 @@ Group *read_externals(void)
             exit(1);
     }
 
-    err(1, "Can't find a valid externals file");
+    return NULL;
 }
 
 
+//
+// Free groups/matches/externals
+//
+
+static void free_matches(Match *match)
+{
+    if (NULL == match)
+	return;
+
+    Match *next = match->next;
+
+#if DBG_LEAKS
+    fprintf(stderr, "MAT free_matches(%p)\n", (void *)match);
+    fprintf(stderr, "    regex: %s\n", match->regex);
+    fprintf(stderr, "    preg= %p\n", (void *)&match->preg);
+    fprintf(stderr, "MAT free_matches next= %p\n", (void *)next);
+#endif
+
+    free(match->regex);
+    regfree(&match->preg);
+    free(match);
+
+    free_matches(next);
+}
+
+
+static void free_externals(External *external)
+{
+    if (NULL == external)
+	return;
+
+    External *next = external->next;
+
+#if DBG_LEAKS
+    fprintf(stderr, "EXT free_externals(%p)\n", (void *)external);
+    fprintf(stderr, "    name: %s\n", external->name);
+    fprintf(stderr, "    sendmail: %s\n", external->sendmail);
+    fprintf(stderr, "    sendmail_argv: %s\n", *external->sendmail_argv);
+    fprintf(stderr, "    sendmail_nargv: %d\n", external->sendmail_nargv);
+    fprintf(stderr, "EXT free_externals next= %p\n", (void *)next);
+#endif
+
+    free(external->name);
+    free(external->sendmail);
+    for (int i = 0; i < external->sendmail_nargv; i++)
+	free(external->sendmail_argv[i]);
+    free(external->sendmail_argv);
+    free(external);
+
+    free_externals(next);
+}
+
+
+static void free_groups(Group *group)
+{
+    if (NULL == group)
+	return;
+
+    Group *next = group->next;
+
+#if DBG_LEAKS
+    fprintf(stderr, "GRO free_groups(%p)\n", (void *)group);
+    fprintf(stderr, "GRO free_groups group->next= %p\n", (void *)group->next);
+#endif
+
+    free_matches(group->matches);
+    free_externals(group->externals);
+    free(group);
+
+    free_groups(next);
+}
+
+#if HAVE_YYLEX_DESTROY
+extern void yyelex_destroy(void);
+#endif
 
 //
 // Attempts to read a configuration file at 'path'; returns 0 on success, 1 if a
@@ -264,13 +340,16 @@ int try_externals_path(const char *path)
         return -1;
     }
     free(cnd_path);
-    
+
     if (yyeparse() != 0) {
         fclose(yyein);
         return -1;
     }
 
     fclose(yyein);
+#if HAVE_YYLEX_DESTROY
+    yyelex_destroy();
+#endif
     
     return 0;
 }
@@ -1322,6 +1401,8 @@ int main(int argc, char** argv)
     Conf *conf = read_conf();
 
     Group *groups = read_externals();
+    if (groups == NULL)
+	err(1, "Can't find a valid externals file");
     
     obtain_lock(conf);
 
@@ -1468,6 +1549,10 @@ int main(int argc, char** argv)
                     unsuccessful_wait = MAX_POLL_WAIT;
             }
         }
+
+	// not reached
+        free_conf(conf); // XXX should be done in the exit handler
+        free_groups(groups); // XXX should be done in the exit handler
     }
     else {
         conf->mode = BATCH_MODE;
@@ -1482,6 +1567,9 @@ int main(int argc, char** argv)
         }
 
         closelog();
+
+        free_conf(conf);
+        free_groups(groups);
 
         return 0;
     }

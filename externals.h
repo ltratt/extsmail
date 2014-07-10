@@ -25,16 +25,16 @@ typedef enum {HEADER} Match_Location;
 typedef struct _mat {
     Match_Type type;
     Match_Location location;
-    const char *regex;          // Human friendly.
+    char *regex;                // Human friendly.
     regex_t preg;
     
     struct _mat *next;
 } Match;
 
 typedef struct _ext {
-    const char *name;           // Human friendly name - can be anything.
-    const char *sendmail;       // sendmail command as a string.
-    const char **sendmail_argv; // sendmail command broken up into argv for exec.
+    char *name;                 // Human friendly name - can be anything.
+    char *sendmail;             // sendmail command as a string.
+    char **sendmail_argv;       // sendmail command broken up into argv for exec.
     int sendmail_nargv;         // Number of entries in sendmail_argv.
     
     bool working;               // On each cycle, reset to 'true'.
