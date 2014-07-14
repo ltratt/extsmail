@@ -136,6 +136,7 @@ int lock_fd;
 
 void lock_exit();
 void sigterm_trap(int);
+void sighup_trap(int);
 
 void obtain_lock(Conf *conf)
 {
@@ -164,6 +165,7 @@ void obtain_lock(Conf *conf)
     atexit(lock_exit);
     signal(SIGINT, sigterm_trap);
     signal(SIGTERM, sigterm_trap);
+    signal(SIGHUP, sighup_trap);
 }
 
 
@@ -197,6 +199,15 @@ void sigterm_trap(int sigraised)
     exit(1);
 }
 
+
+//
+// Function when SIGHUP is received. This reloads the externals configuration
+//
+
+void sighup_trap(int sigraised)
+{
+    syslog(LOG_INFO, "Reloading configuration");
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
