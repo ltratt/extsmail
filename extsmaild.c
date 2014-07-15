@@ -113,7 +113,7 @@ typedef struct {
 
 extern char* __progname;
 
-Group *read_externals(void);
+static void read_externals(void);
 static void free_groups(Group *);
 int try_externals_path(const char *);
 bool cycle(Conf *, Group *, Status *);
@@ -230,20 +230,17 @@ void sighup_trap(int sigraised)
 // This function does not return if there is a problem.
 //
 
-Group *read_externals(void)
+static void read_externals(void)
 {
     for (int i = 0; EXTERNALS_PATHS[i] != NULL; i += 1) {
         int rtn = try_externals_path(EXTERNALS_PATHS[i]);
         if (rtn == 0)
-            return groups;
+            return;
         else if (rtn == -1)
             exit(1);
     }
 
     err(1, "Can't find a valid externals file");
-
-    // Not reached
-    return NULL;
 }
 
 
@@ -1461,7 +1458,7 @@ static void display_groups(const Group *group, const int no)
 
 static void check_externals()
 {
-    Group *groups = read_externals();
+    read_externals();
 
     display_groups(groups, 1);
 
@@ -1508,7 +1505,7 @@ int main(int argc, char** argv)
 
     Conf *conf = read_conf();
 
-    Group *groups = read_externals();
+    read_externals();
     
     obtain_lock(conf);
 
