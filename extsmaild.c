@@ -218,8 +218,9 @@ void sigterm_trap(int sigraised)
 
 void sighup_trap(int sigraised)
 {
-    // To be done
-    syslog(LOG_INFO, "Reloading configuration");
+    free_groups(groups);
+    read_externals();
+    syslog(LOG_INFO, "Reloaded configuration");
 }
 
 
