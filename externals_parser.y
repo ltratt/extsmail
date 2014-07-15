@@ -126,6 +126,7 @@ match : TMATCH THEADER TSTRING
             Match *m = add_match(MATCH, $<str>3);
             if (m == NULL)
                 YYABORT;
+            m->location = HEADER;
             $<match>$ = m;
         }
     ;
@@ -135,6 +136,7 @@ reject : TREJECT THEADER TSTRING
             Match *m = add_match(REJECT, $<str>3);
             if (m == NULL)
                 YYABORT;
+            m->location = HEADER;
             $<match>$ = m;
         }
     ;
