@@ -170,6 +170,16 @@ void obtain_lock(Conf *conf)
 
 
 
+////////////////////////////////////////////////////////////////////////////////
+// Configuration file related
+//
+
+Group *groups;
+extern int yyeparse(void);
+FILE *yyein;
+
+
+
 //
 // Exit handler for atexit.
 //
@@ -200,23 +210,19 @@ void sigterm_trap(int sigraised)
 }
 
 
+
 //
-// Function when SIGHUP is received. This reloads the externals configuration
+// Function when SIGHUP is received. This reloads the externals configuration.
+// Check the configuration file by running "extsmaild -t"
 //
 
 void sighup_trap(int sigraised)
 {
+    // To be done
     syslog(LOG_INFO, "Reloading configuration");
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-// Configuration file related
-//
-
-Group *groups;
-extern int yyeparse(void);
-FILE *yyein;
 
 //
 // Read the externals file in.
@@ -1380,13 +1386,97 @@ bool set_nonblock(int fd)
 
 
 
+//
+// Display configuration.
+//
+
+static void display_matches(const Match *match)
+{
+    if (NULL == match)
+	return;
+
+    Match *next = match->next;
+
+    if (match->type == MATCH) {
+	printf("\tmatch  ");
+    } else if (match->type == REJECT) {
+	printf("\treject ");
+    }
+
+    if (match->location == HEADER) {
+	printf("header");
+    }
+
+    printf(" \"%s\"\n", match->regex);
+
+    display_matches(next);
+}
+
+
+static void display_externals(const External *external)
+{
+    if (NULL == external)
+	return;
+
+    External *next = external->next;
+
+    printf("\texternal %s:\n", external->name);
+    printf("\t\tsendmail = \"%s\"\n", external->sendmail);
+
+    printf("\t\ttimeout = ");
+    if (external->timeout) {
+	printf("%d seconds\n", external->timeout);
+    } else {
+	printf("infinite\n");
+    }
+
+    display_externals(next);
+}
+
+
+static void display_groups(const Group *group, const int no)
+{
+    if (NULL == group)
+	return;
+
+    Group *next = group->next;
+    printf("Group %d:\n", no);
+
+    display_matches(group->matches);
+    if (NULL != group->matches)
+	printf("\n");
+
+    display_externals(group->externals);
+    if (NULL != next)
+	printf("\n");
+
+    display_groups(next, no+1);
+}
+
+
+
+//
+// Check if the externals file can be loaded.
+//
+
+static void check_externals()
+{
+    Group *groups = read_externals();
+
+    display_groups(groups, 1);
+
+    free_groups(groups);
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // main
 //
 
 void usage(int rtn_code)
 {
-    fprintf(stderr, "Usage: %s [-m <batch|daemon>]\n", __progname);
+    fprintf(stderr, "Usage: %s [-m <batch|daemon>] [-t]\n", __progname);
     exit(rtn_code);
 }
 
@@ -1395,7 +1485,7 @@ int main(int argc, char** argv)
 {
     Mode mode = BATCH_MODE;
     int ch;
-    while ((ch = getopt(argc, argv, "hm:")) != -1) {
+    while ((ch = getopt(argc, argv, "hm:t")) != -1) {
         switch (ch) {
             case 'm':
                 if (strcmp(optarg, "batch") == 0)
@@ -1407,6 +1497,10 @@ int main(int argc, char** argv)
                 break;
             case 'h':
                 usage(0);
+	    case 't':
+                check_externals();
+                exit(0);
+		break;
             default:
                 usage(1);
         }
