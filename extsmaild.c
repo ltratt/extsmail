@@ -1457,13 +1457,17 @@ static void display_groups(const Group *group, const int no)
 // Check if the externals file can be loaded.
 //
 
-static void check_externals()
+static void check_externals(const char *file)
 {
-    read_externals();
+    int rtn = try_externals_path(file);
 
-    display_groups(groups, 1);
-
-    free_groups(groups);
+    if (rtn == 0) {
+	printf("%s: OK\n", file);
+	display_groups(groups, 1);
+	free_groups(groups);
+    } else {
+	fprintf(stderr, "%s: Syntax error, wrong permissions or file not found\n", file);
+    }
 }
 
 
@@ -1474,7 +1478,7 @@ static void check_externals()
 
 void usage(int rtn_code)
 {
-    fprintf(stderr, "Usage: %s [-m <batch|daemon>] [-t]\n", __progname);
+    fprintf(stderr, "Usage: %s [-m <batch|daemon>] [-t <conf>]\n", __progname);
     exit(rtn_code);
 }
 
@@ -1483,7 +1487,7 @@ int main(int argc, char** argv)
 {
     Mode mode = BATCH_MODE;
     int ch;
-    while ((ch = getopt(argc, argv, "hm:t")) != -1) {
+    while ((ch = getopt(argc, argv, "hm:t:")) != -1) {
         switch (ch) {
             case 'm':
                 if (strcmp(optarg, "batch") == 0)
@@ -1496,7 +1500,7 @@ int main(int argc, char** argv)
             case 'h':
                 usage(0);
 	    case 't':
-                check_externals();
+                check_externals(optarg);
                 exit(0);
 		break;
             default:
