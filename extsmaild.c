@@ -136,7 +136,10 @@ int lock_fd;
 
 void lock_exit();
 void sigterm_trap(int);
+
 void sighup_trap(int);
+static char reload_configuration = 0;
+
 
 void obtain_lock(Conf *conf)
 {
@@ -218,9 +221,10 @@ void sigterm_trap(int sigraised)
 
 void sighup_trap(int sigraised)
 {
-    free_groups(groups);
-    read_externals();
-    syslog(LOG_INFO, "Reloaded configuration");
+    if (!reload_configuration) {
+        syslog(LOG_INFO, "Scheduling configuration reload");
+        reload_configuration = 1;
+    }
 }
 
 
@@ -437,7 +441,7 @@ bool cycle(Conf *conf, Group *groups, Status *status)
     }
     long start_spool_loc, spool_loc;
     start_spool_loc = spool_loc = status->spool_loc;
-    
+
     // Reset all the externals "working" status so that we'll try all of them
     // again.
     
@@ -456,6 +460,14 @@ bool cycle(Conf *conf, Group *groups, Status *status)
     int num_successes = 0;   // How many messages have been successfully sent.
     while (1) {
         char *msg_path = NULL;
+
+        // Reload the externals file if asked to
+        if (reload_configuration)  {
+            free_groups(groups);
+            read_externals();
+            syslog(LOG_INFO, "Reloaded configuration");
+            reload_configuration = 0;
+        }
 
         errno = 0;
         struct dirent *dp = readdir(dirp);
