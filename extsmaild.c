@@ -256,7 +256,7 @@ static void read_externals(void)
 static void free_matches(Match *match)
 {
     if (NULL == match)
-	return;
+        return;
 
     Match *next = match->next;
 
@@ -278,7 +278,7 @@ static void free_matches(Match *match)
 static void free_externals(External *external)
 {
     if (NULL == external)
-	return;
+        return;
 
     External *next = external->next;
 
@@ -294,7 +294,7 @@ static void free_externals(External *external)
     free(external->name);
     free(external->sendmail);
     for (int i = 0; i < external->sendmail_nargv; i++)
-	free(external->sendmail_argv[i]);
+        free(external->sendmail_argv[i]);
     free(external->sendmail_argv);
     free(external);
 
@@ -305,7 +305,7 @@ static void free_externals(External *external)
 static void free_groups(Group *group)
 {
     if (NULL == group)
-	return;
+        return;
 
     Group *next = group->next;
 
@@ -1403,18 +1403,18 @@ bool set_nonblock(int fd)
 static void display_matches(const Match *match)
 {
     if (NULL == match)
-	return;
+        return;
 
     Match *next = match->next;
 
     if (match->type == MATCH) {
-	printf("\tmatch  ");
+        printf("\tmatch  ");
     } else if (match->type == REJECT) {
-	printf("\treject ");
+        printf("\treject ");
     }
 
     if (match->location == HEADER) {
-	printf("header");
+        printf("header");
     }
 
     printf(" \"%s\"\n", match->regex);
@@ -1426,7 +1426,7 @@ static void display_matches(const Match *match)
 static void display_externals(const External *external)
 {
     if (NULL == external)
-	return;
+        return;
 
     External *next = external->next;
 
@@ -1435,9 +1435,9 @@ static void display_externals(const External *external)
 
     printf("\t\ttimeout = ");
     if (external->timeout) {
-	printf("%d seconds\n", external->timeout);
+        printf("%d seconds\n", external->timeout);
     } else {
-	printf("infinite\n");
+        printf("infinite\n");
     }
 
     display_externals(next);
@@ -1447,18 +1447,18 @@ static void display_externals(const External *external)
 static void display_groups(const Group *group, const int no)
 {
     if (NULL == group)
-	return;
+        return;
 
     Group *next = group->next;
     printf("Group %d:\n", no);
 
     display_matches(group->matches);
     if (NULL != group->matches)
-	printf("\n");
+        printf("\n");
 
     display_externals(group->externals);
     if (NULL != next)
-	printf("\n");
+        printf("\n");
 
     display_groups(next, no+1);
 }
@@ -1474,11 +1474,11 @@ static void check_externals(const char *file)
     int rtn = try_externals_path(file);
 
     if (rtn == 0) {
-	printf("%s: OK\n", file);
-	display_groups(groups, 1);
-	free_groups(groups);
+        printf("%s: OK\n", file);
+        display_groups(groups, 1);
+        free_groups(groups);
     } else {
-	fprintf(stderr, "%s: Syntax error, wrong permissions or file not found\n", file);
+        fprintf(stderr, "%s: Syntax error, wrong permissions or file not found\n", file);
     }
 }
 
@@ -1511,10 +1511,10 @@ int main(int argc, char** argv)
                 break;
             case 'h':
                 usage(0);
-	    case 't':
+            case 't':
                 check_externals(optarg);
                 exit(0);
-		break;
+                break;
             default:
                 usage(1);
         }
@@ -1670,7 +1670,7 @@ int main(int argc, char** argv)
             }
         }
 
-	// not reached
+        // not reached
         free_conf(conf); // XXX should be done in the exit handler
         free_groups(groups); // XXX should be done in the exit handler
     }
