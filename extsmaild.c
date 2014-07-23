@@ -138,7 +138,7 @@ void lock_exit();
 void sigterm_trap(int);
 
 void sighup_trap(int);
-static char reload_configuration = 0;
+volatile sig_atomic_t reload_config = 0;
 
 
 void obtain_lock(Conf *conf)
@@ -221,9 +221,9 @@ void sigterm_trap(int sigraised)
 
 void sighup_trap(int sigraised)
 {
-    if (!reload_configuration) {
-        syslog(LOG_INFO, "Scheduling configuration reload");
-        reload_configuration = 1;
+    if (!reload_config) {
+        syslog(LOG_INFO, "Scheduling externals reload");
+        reload_config = 1;
     }
 }
 
@@ -462,11 +462,11 @@ bool cycle(Conf *conf, Group *groups, Status *status)
         char *msg_path = NULL;
 
         // Reload the externals file if asked to
-        if (reload_configuration)  {
+        if (reload_config)  {
             free_groups(groups);
             read_externals();
-            syslog(LOG_INFO, "Reloaded configuration");
-            reload_configuration = 0;
+            syslog(LOG_INFO, "Reloaded externals");
+            reload_config = 0;
         }
 
         errno = 0;
