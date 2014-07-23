@@ -1669,10 +1669,6 @@ int main(int argc, char** argv)
                     unsuccessful_wait = MAX_POLL_WAIT;
             }
         }
-
-        // not reached
-        free_conf(conf); // XXX should be done in the exit handler
-        free_groups(groups); // XXX should be done in the exit handler
     }
     else {
         conf->mode = BATCH_MODE;
