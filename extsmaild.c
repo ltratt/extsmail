@@ -222,7 +222,6 @@ void sigterm_trap(int sigraised)
 void sighup_trap(int sigraised)
 {
     if (!reload_config) {
-        syslog(LOG_INFO, "Scheduling externals reload");
         reload_config = 1;
     }
 }
