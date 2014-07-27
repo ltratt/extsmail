@@ -221,9 +221,7 @@ void sigterm_trap(int sigraised)
 
 void sighup_trap(int sigraised)
 {
-    if (!reload_config) {
-        reload_config = 1;
-    }
+    reload_config = 1;
 }
 
 
