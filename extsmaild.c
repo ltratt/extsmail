@@ -1432,7 +1432,7 @@ static void display_externals(const External *external)
 
     printf("\t\ttimeout = ");
     if (external->timeout) {
-        printf("%d seconds\n", external->timeout);
+        printf("%ld seconds\n", external->timeout);
     } else {
         printf("infinite\n");
     }
