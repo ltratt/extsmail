@@ -41,7 +41,7 @@ AC_GNU_SOURCE
 # Function / feature checks
 #
 
-CFLAGS="$CFLAGS -std=c99 -Wall -pedantic -Wextra"
+CFLAGS="$CFLAGS -std=c99 -Wall -pedantic -Wextra -Wno-unused-parameter"
 
 # gcc (at least 4.9) emits
 #   "warning: ISO C does not support the ‘%m’ gnu_printf format"
