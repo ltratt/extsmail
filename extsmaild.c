@@ -121,7 +121,7 @@ bool try_groups(Conf *, Status *, const char *, int);
 void push_killed_pid(Status *, pid_t);
 void cycle_killed_pids(Status *);
 void do_notify_failure_cmd(Conf *, Status *);
-void do_notify_success_cmd(Conf *, Status *, int);
+void do_notify_success_cmd(Conf *, int);
 bool set_nonblock(int);
 
 
@@ -638,7 +638,7 @@ next_msg:
     }
 
     if (num_successes > 0)
-        do_notify_success_cmd(conf, status, num_successes);
+        do_notify_success_cmd(conf, num_successes);
 
     return all_sent;
 }
@@ -1356,7 +1356,7 @@ void do_notify_failure_cmd(Conf *conf, Status *status)
 
 
 
-void do_notify_success_cmd(Conf *conf, Status *status, int num_successes)
+void do_notify_success_cmd(Conf *conf, int num_successes)
 {
     if (conf->notify_success_cmd == NULL)
         return;
