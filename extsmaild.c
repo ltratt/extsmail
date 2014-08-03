@@ -176,9 +176,9 @@ static void obtain_lock(Conf *conf)
 // Configuration file related
 //
 
-Group *groups;
+Group *groups = NULL;
 extern int yyeparse(void);
-FILE *yyein;
+static FILE *yyein = NULL;
 
 
 
