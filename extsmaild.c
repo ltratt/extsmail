@@ -737,7 +737,7 @@ static bool read_argv(const char *msg_path, int fd, char ***rargv, int *rnargv)
 // NOTE: This function can arbitrarily move the current seek position of fd.
 //
 
-Group *find_group(const char *msg_path, int fd)
+static Group *find_group(const char *msg_path, int fd)
 {
     // Read in the messages header, doctoring it along the way to make it
     // suitable for being searched with regular expressions. The doctoring is
