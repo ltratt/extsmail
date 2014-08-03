@@ -59,7 +59,7 @@
 
 // #define DBG_LEAKS 1
 
-const char *EXTERNALS_PATHS[] = {"~/.extsmail/externals",
+static const char *EXTERNALS_PATHS[] = {"~/.extsmail/externals",
   "/etc/extsmail/externals", NULL};
 #define LOCKFILE "extsmaild.lock"
 
