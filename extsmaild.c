@@ -135,9 +135,8 @@ char *lock_path;
 int lock_fd;
 
 static void lock_exit();
-void sigterm_trap(int);
-
-void sighup_trap(int);
+static void sigterm_trap(int);
+static void sighup_trap(int);
 volatile sig_atomic_t reload_config = 0;
 
 
@@ -207,7 +206,7 @@ static void lock_exit()
 // because we bomb out at an arbitrary point.
 //
 
-void sigterm_trap(__attribute__ ((unused)) int sigraised)
+static void sigterm_trap(__attribute__ ((unused)) int sigraised)
 {
     exit(1);
 }
@@ -219,7 +218,7 @@ void sigterm_trap(__attribute__ ((unused)) int sigraised)
 // Check the configuration file by running "extsmaild -t"
 //
 
-void sighup_trap(__attribute__ ((unused)) int sigraised)
+static void sighup_trap(__attribute__ ((unused)) int sigraised)
 {
     reload_config = 1;
 }
