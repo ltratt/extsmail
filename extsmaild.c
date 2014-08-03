@@ -738,7 +738,7 @@ static bool read_argv(const char *msg_path, int fd, char ***rargv, int *rnargv)
 // NOTE: This function can arbitrarily move the current seek position of fd.
 //
 
-Group *find_group(Conf *conf, const char *msg_path, int fd)
+Group *find_group(const char *msg_path, int fd)
 {
     // Read in the messages header, doctoring it along the way to make it
     // suitable for being searched with regular expressions. The doctoring is
@@ -1085,7 +1085,7 @@ bool try_groups(Conf *conf, Group *groups, Status *status,
         syslog(LOG_ERR, "Error when lseek'ing from '%s'", msg_path);
         goto fail;
     }
-    Group *group = find_group(conf, msg_path, fd);
+    Group *group = find_group(msg_path, fd);
     if (group == NULL) {
         syslog(LOG_ERR, "No matching group found for '%s'", msg_path);
         goto fail;
