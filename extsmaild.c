@@ -131,8 +131,8 @@ static bool set_nonblock(int);
 // Lock file
 //
 
-char *lock_path;
-int lock_fd;
+static char *lock_path;
+static int lock_fd;
 
 static void lock_exit();
 static void sigterm_trap(int);
