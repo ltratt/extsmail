@@ -55,7 +55,7 @@ char *mk_str(char *);
 
 \"    {
         size_t len = 128;
-        int i = 0;
+        size_t i = 0;
         char *buf = malloc(len);
         int c;
         while ((c = input()) != 0) {
