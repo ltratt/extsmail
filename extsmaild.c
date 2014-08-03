@@ -134,7 +134,7 @@ static bool set_nonblock(int);
 char *lock_path;
 int lock_fd;
 
-void lock_exit();
+static void lock_exit();
 void sigterm_trap(int);
 
 void sighup_trap(int);
@@ -189,7 +189,7 @@ FILE *yyein;
 // This should be kept as simple as possible.
 //
 
-void lock_exit()
+static void lock_exit()
 {
     unlink(lock_path);
     free(lock_path);
