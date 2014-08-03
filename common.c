@@ -41,7 +41,7 @@ const char *CONF_PATHS[] = {"~/.extsmail/conf", "/etc/extsmail/conf", NULL};
 #define HOME_PFX "~/"
 
 static int try_conf_path(const char *);
-bool check_dir(const char *);
+static bool check_dir(const char *);
 
 
 
@@ -165,7 +165,7 @@ bool check_spool_dir(Conf *conf)
    
 
 
-bool check_dir(const char *path)
+static bool check_dir(const char *path)
 {
     struct stat sd_st;
     if (stat(path, &sd_st) == -1) {
