@@ -137,7 +137,7 @@ int lock_fd;
 static void lock_exit();
 static void sigterm_trap(int);
 static void sighup_trap(int);
-volatile sig_atomic_t reload_config = 0;
+static volatile sig_atomic_t reload_config = 0;
 
 
 static void obtain_lock(Conf *conf)
