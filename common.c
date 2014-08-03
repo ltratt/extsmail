@@ -40,7 +40,7 @@
 const char *CONF_PATHS[] = {"~/.extsmail/conf", "/etc/extsmail/conf", NULL};
 #define HOME_PFX "~/"
 
-int try_conf_path(const char *);
+static int try_conf_path(const char *);
 bool check_dir(const char *);
 
 
@@ -104,7 +104,7 @@ void free_conf(Conf *conf)
 // file is not found and -1 if an error occurred.
 //
 
-int try_conf_path(const char *path)
+static int try_conf_path(const char *path)
 {
     char *cnd_path = expand_path(path);
     if (cnd_path == NULL) {
