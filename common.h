@@ -28,7 +28,6 @@ Conf *read_conf();
 void free_conf(Conf *);
 bool check_spool_dir(Conf *);
 
-char *rdline(FILE *);
 char *fdrdline(int);
 char *expand_path(const char *);
 char *mk_str(char *);
