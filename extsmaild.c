@@ -207,7 +207,7 @@ void lock_exit()
 // because we bomb out at an arbitrary point.
 //
 
-void sigterm_trap(int sigraised)
+void sigterm_trap(__attribute__ ((unused)) int sigraised)
 {
     exit(1);
 }
@@ -219,7 +219,7 @@ void sigterm_trap(int sigraised)
 // Check the configuration file by running "extsmaild -t"
 //
 
-void sighup_trap(int sigraised)
+void sighup_trap(__attribute__ ((unused)) int sigraised)
 {
     reload_config = 1;
 }
