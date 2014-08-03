@@ -652,8 +652,7 @@ next_msg:
 // array of argument strings of length 'rnargv'.
 //
 
-bool read_argv(Conf *conf, const char *msg_path, int fd, char ***rargv,
-               int *rnargv)
+static bool read_argv(const char *msg_path, int fd, char ***rargv, int *rnargv)
 {
     // Check that the version string is one we can handle.
     
@@ -1075,7 +1074,7 @@ bool try_groups(Conf *conf, Group *groups, Status *status,
 {
     char **argv;
     int nargv;
-    if (!read_argv(conf, msg_path, fd, &argv, &nargv))
+    if (!read_argv(msg_path, fd, &argv, &nargv))
         return false;
 
     // We need to record where the actual message starts before calling
