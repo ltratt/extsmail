@@ -117,7 +117,7 @@ static void read_externals(void);
 static void free_groups(Group *);
 int try_externals_path(const char *);
 bool cycle(Conf *, Group *, Status *);
-bool try_groups(Conf *, Group *, Status *, const char *, int);
+bool try_groups(Conf *, Status *, const char *, int);
 void push_killed_pid(Status *, pid_t);
 void cycle_killed_pids(Status *);
 void do_notify_failure_cmd(Conf *, Status *);
@@ -563,7 +563,7 @@ bool cycle(Conf *conf, Group *groups, Status *status)
                 goto next_try;
             }
 
-            if (try_groups(conf, groups, status, msg_path, fd)) {
+            if (try_groups(conf, status, msg_path, fd)) {
                 num_successes += 1;
                 break;
             }
@@ -1069,8 +1069,7 @@ cleanup:
 // otherwise.
 //
 
-bool try_groups(Conf *conf, Group *groups, Status *status,
-                const char *msg_path, int fd)
+bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
 {
     char **argv;
     int nargv;
