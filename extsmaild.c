@@ -141,7 +141,7 @@ void sighup_trap(int);
 volatile sig_atomic_t reload_config = 0;
 
 
-void obtain_lock(Conf *conf)
+static void obtain_lock(Conf *conf)
 {
     if (asprintf(&lock_path, "%s%s%s", conf->spool_dir, DIR_SEP, LOCKFILE)
       == -1) {
