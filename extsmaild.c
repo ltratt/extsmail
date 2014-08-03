@@ -1482,7 +1482,7 @@ static void check_externals(const char *file)
 // main
 //
 
-void usage(int rtn_code)
+static void usage(int rtn_code)
 {
     fprintf(stderr, "Usage: %s [-m <batch|daemon>] [-t <conf>]\n", __progname);
     exit(rtn_code);
