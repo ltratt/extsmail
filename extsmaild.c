@@ -59,7 +59,7 @@
 
 // #define DBG_LEAKS 1
 
-const char *EXTERNALS_PATHS[] = {"~/.extsmail/externals",
+static const char *EXTERNALS_PATHS[] = {"~/.extsmail/externals",
   "/etc/extsmail/externals", NULL};
 #define LOCKFILE "extsmaild.lock"
 
@@ -115,14 +115,14 @@ extern char* __progname;
 
 static void read_externals(void);
 static void free_groups(Group *);
-int try_externals_path(const char *);
-bool cycle(Conf *, Group *, Status *);
-bool try_groups(Conf *, Status *, const char *, int);
-void push_killed_pid(Status *, pid_t);
-void cycle_killed_pids(Status *);
-void do_notify_failure_cmd(Conf *, Status *);
-void do_notify_success_cmd(Conf *, int);
-bool set_nonblock(int);
+static int try_externals_path(const char *);
+static bool cycle(Conf *, Group *, Status *);
+static bool try_groups(Conf *, Status *, const char *, int);
+static void push_killed_pid(Status *, pid_t);
+static void cycle_killed_pids(Status *);
+static void do_notify_failure_cmd(Conf *, Status *);
+static void do_notify_success_cmd(Conf *, int);
+static bool set_nonblock(int);
 
 
 
@@ -131,17 +131,16 @@ bool set_nonblock(int);
 // Lock file
 //
 
-char *lock_path;
-int lock_fd;
+static char *lock_path;
+static int lock_fd;
 
-void lock_exit();
-void sigterm_trap(int);
+static void lock_exit();
+static void sigterm_trap(int);
+static void sighup_trap(int);
+static volatile sig_atomic_t reload_config = 0;
 
-void sighup_trap(int);
-volatile sig_atomic_t reload_config = 0;
 
-
-void obtain_lock(Conf *conf)
+static void obtain_lock(Conf *conf)
 {
     if (asprintf(&lock_path, "%s%s%s", conf->spool_dir, DIR_SEP, LOCKFILE)
       == -1) {
@@ -177,9 +176,9 @@ void obtain_lock(Conf *conf)
 // Configuration file related
 //
 
-Group *groups;
+Group *groups = NULL;
 extern int yyeparse(void);
-FILE *yyein;
+static FILE *yyein = NULL;
 
 
 
@@ -189,7 +188,7 @@ FILE *yyein;
 // This should be kept as simple as possible.
 //
 
-void lock_exit()
+static void lock_exit()
 {
     unlink(lock_path);
     free(lock_path);
@@ -207,7 +206,7 @@ void lock_exit()
 // because we bomb out at an arbitrary point.
 //
 
-void sigterm_trap(__attribute__ ((unused)) int sigraised)
+static void sigterm_trap(__attribute__ ((unused)) int sigraised)
 {
     exit(1);
 }
@@ -219,7 +218,7 @@ void sigterm_trap(__attribute__ ((unused)) int sigraised)
 // Check the configuration file by running "extsmaild -t"
 //
 
-void sighup_trap(__attribute__ ((unused)) int sigraised)
+static void sighup_trap(__attribute__ ((unused)) int sigraised)
 {
     reload_config = 1;
 }
@@ -327,7 +326,7 @@ extern void yyelex_destroy(void);
 // file is not found and -1 if an error occurred.
 //
 
-int try_externals_path(const char *path)
+static int try_externals_path(const char *path)
 {
     char *cnd_path = expand_path(path);
     if (cnd_path == NULL) {
@@ -385,7 +384,7 @@ int try_externals_path(const char *path)
 // one message failed to be succesfully sent.
 //
 
-bool cycle(Conf *conf, Group *groups, Status *status)
+static bool cycle(Conf *conf, Group *groups, Status *status)
 {
     char *msgs_path; // msgs dir (within spool dir)
     if (asprintf(&msgs_path, "%s%s%s", conf->spool_dir, DIR_SEP, MSGS_DIR)
@@ -738,7 +737,7 @@ static bool read_argv(const char *msg_path, int fd, char ***rargv, int *rnargv)
 // NOTE: This function can arbitrarily move the current seek position of fd.
 //
 
-Group *find_group(const char *msg_path, int fd)
+static Group *find_group(const char *msg_path, int fd)
 {
     // Read in the messages header, doctoring it along the way to make it
     // suitable for being searched with regular expressions. The doctoring is
@@ -1069,7 +1068,7 @@ cleanup:
 // otherwise.
 //
 
-bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
+static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
 {
     char **argv;
     int nargv;
@@ -1279,7 +1278,7 @@ fail:
 // Push the pid 'pid' onto the stack of processes which has been SIGKILLed.
 //
 
-void push_killed_pid(Status *status, pid_t pid)
+static void push_killed_pid(Status *status, pid_t pid)
 {
     // Before we malloc more memory, see if any previous killed PIDs have died.
     // If so, it'll free up some memory.
@@ -1300,7 +1299,7 @@ void push_killed_pid(Status *status, pid_t pid)
 // of them have actually exited.
 //
 
-void cycle_killed_pids(Status *status)
+static void cycle_killed_pids(Status *status)
 {
     PID_LList *pll = status->pid_llist;
     PID_LList *last_pll = NULL;
@@ -1324,7 +1323,7 @@ void cycle_killed_pids(Status *status)
 
 
 
-void do_notify_failure_cmd(Conf *conf, Status *status)
+static void do_notify_failure_cmd(Conf *conf, Status *status)
 {
     if (conf->notify_failure_cmd == NULL)
         return;
@@ -1356,7 +1355,7 @@ void do_notify_failure_cmd(Conf *conf, Status *status)
 
 
 
-void do_notify_success_cmd(Conf *conf, int num_successes)
+static void do_notify_success_cmd(Conf *conf, int num_successes)
 {
     if (conf->notify_success_cmd == NULL)
         return;
@@ -1379,7 +1378,7 @@ void do_notify_success_cmd(Conf *conf, int num_successes)
 // Set 'fd' to be non-blocking, returning true on success or false on failure
 //
 
-bool set_nonblock(int fd)
+static bool set_nonblock(int fd)
 {
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1)
@@ -1483,7 +1482,7 @@ static void check_externals(const char *file)
 // main
 //
 
-void usage(int rtn_code)
+static void usage(int rtn_code)
 {
     fprintf(stderr, "Usage: %s [-m <batch|daemon>] [-t <conf>]\n", __progname);
     exit(rtn_code);

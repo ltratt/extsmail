@@ -37,11 +37,11 @@
 #include "conf_parser.tab.h"
 
 
-const char *CONF_PATHS[] = {"~/.extsmail/conf", "/etc/extsmail/conf", NULL};
+static const char *CONF_PATHS[] = {"~/.extsmail/conf", "/etc/extsmail/conf", NULL};
 #define HOME_PFX "~/"
 
-int try_conf_path(const char *);
-bool check_dir(const char *);
+static int try_conf_path(const char *);
+static bool check_dir(const char *);
 
 
 
@@ -55,7 +55,7 @@ extern int yycparse(void);
 #if HAVE_YYLEX_DESTROY
 extern void yyclex_destroy(void);
 #endif
-FILE *yycin;
+static FILE *yycin;
 Conf *conf; // Global variable needed for Yacc. Sigh.
 
 //
@@ -104,7 +104,7 @@ void free_conf(Conf *conf)
 // file is not found and -1 if an error occurred.
 //
 
-int try_conf_path(const char *path)
+static int try_conf_path(const char *path)
 {
     char *cnd_path = expand_path(path);
     if (cnd_path == NULL) {
@@ -165,7 +165,7 @@ bool check_spool_dir(Conf *conf)
    
 
 
-bool check_dir(const char *path)
+static bool check_dir(const char *path)
 {
     struct stat sd_st;
     if (stat(path, &sd_st) == -1) {
