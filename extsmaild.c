@@ -115,14 +115,14 @@ extern char* __progname;
 
 static void read_externals(void);
 static void free_groups(Group *);
-int try_externals_path(const char *);
-bool cycle(Conf *, Group *, Status *);
-bool try_groups(Conf *, Status *, const char *, int);
-void push_killed_pid(Status *, pid_t);
-void cycle_killed_pids(Status *);
-void do_notify_failure_cmd(Conf *, Status *);
-void do_notify_success_cmd(Conf *, int);
-bool set_nonblock(int);
+static int try_externals_path(const char *);
+static bool cycle(Conf *, Group *, Status *);
+static bool try_groups(Conf *, Status *, const char *, int);
+static void push_killed_pid(Status *, pid_t);
+static void cycle_killed_pids(Status *);
+static void do_notify_failure_cmd(Conf *, Status *);
+static void do_notify_success_cmd(Conf *, int);
+static bool set_nonblock(int);
 
 
 
@@ -327,7 +327,7 @@ extern void yyelex_destroy(void);
 // file is not found and -1 if an error occurred.
 //
 
-int try_externals_path(const char *path)
+static int try_externals_path(const char *path)
 {
     char *cnd_path = expand_path(path);
     if (cnd_path == NULL) {
@@ -385,7 +385,7 @@ int try_externals_path(const char *path)
 // one message failed to be succesfully sent.
 //
 
-bool cycle(Conf *conf, Group *groups, Status *status)
+static bool cycle(Conf *conf, Group *groups, Status *status)
 {
     char *msgs_path; // msgs dir (within spool dir)
     if (asprintf(&msgs_path, "%s%s%s", conf->spool_dir, DIR_SEP, MSGS_DIR)
@@ -1069,7 +1069,7 @@ cleanup:
 // otherwise.
 //
 
-bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
+static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
 {
     char **argv;
     int nargv;
@@ -1279,7 +1279,7 @@ fail:
 // Push the pid 'pid' onto the stack of processes which has been SIGKILLed.
 //
 
-void push_killed_pid(Status *status, pid_t pid)
+static void push_killed_pid(Status *status, pid_t pid)
 {
     // Before we malloc more memory, see if any previous killed PIDs have died.
     // If so, it'll free up some memory.
@@ -1300,7 +1300,7 @@ void push_killed_pid(Status *status, pid_t pid)
 // of them have actually exited.
 //
 
-void cycle_killed_pids(Status *status)
+static void cycle_killed_pids(Status *status)
 {
     PID_LList *pll = status->pid_llist;
     PID_LList *last_pll = NULL;
@@ -1324,7 +1324,7 @@ void cycle_killed_pids(Status *status)
 
 
 
-void do_notify_failure_cmd(Conf *conf, Status *status)
+static void do_notify_failure_cmd(Conf *conf, Status *status)
 {
     if (conf->notify_failure_cmd == NULL)
         return;
@@ -1356,7 +1356,7 @@ void do_notify_failure_cmd(Conf *conf, Status *status)
 
 
 
-void do_notify_success_cmd(Conf *conf, int num_successes)
+static void do_notify_success_cmd(Conf *conf, int num_successes)
 {
     if (conf->notify_success_cmd == NULL)
         return;
@@ -1379,7 +1379,7 @@ void do_notify_success_cmd(Conf *conf, int num_successes)
 // Set 'fd' to be non-blocking, returning true on success or false on failure
 //
 
-bool set_nonblock(int fd)
+static bool set_nonblock(int fd)
 {
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1)
