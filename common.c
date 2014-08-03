@@ -37,7 +37,7 @@
 #include "conf_parser.tab.h"
 
 
-const char *CONF_PATHS[] = {"~/.extsmail/conf", "/etc/extsmail/conf", NULL};
+static const char *CONF_PATHS[] = {"~/.extsmail/conf", "/etc/extsmail/conf", NULL};
 #define HOME_PFX "~/"
 
 static int try_conf_path(const char *);
