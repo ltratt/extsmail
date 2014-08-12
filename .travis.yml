@@ -9,3 +9,7 @@ notifications:
       - olivier@biniou.info
     on_success: change
     on_failure: always
+
+compiler:
+  - clang
+  - gcc
