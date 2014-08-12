@@ -1,1 +1,2 @@
 language: c
+before_script: make -f Makefile.bootstrap
