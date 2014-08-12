@@ -1,0 +1,15 @@
+language: c
+
+install:
+  - make -f Makefile.bootstrap
+
+notifications:
+  email:
+    recipients:
+      - olivier@biniou.info
+    on_success: change
+    on_failure: always
+
+compiler:
+  - clang
+  - gcc
