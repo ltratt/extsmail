@@ -75,4 +75,4 @@ distrib:
       tar cfz extsmail-$$v.tar.gz extsmail-$$v; rm -rf extsmail-$$v
 
 test:
-	echo "To be done"
+	@echo "target 'test': To be done"
