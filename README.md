@@ -1,6 +1,4 @@
-================================================================================
-  extsmail
-================================================================================
+# extsmail
 
 extsmail enables the robust sending of e-mail to external commands. In effect
 extsmail masquerades as the standard UNIX sendmail program, reading messages,
