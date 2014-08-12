@@ -3,9 +3,6 @@ language: c
 install:
   - make -f Makefile.bootstrap
 
-before_script:
-  - ./configure
-
 notifications:
   email:
     recipients:
