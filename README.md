@@ -11,7 +11,5 @@ More information about extsmail can be found at its webpage:
 
   http://tratt.net/laurie/src/extsmail/
 
-![Travis build status](https://api.travis-ci.org/oliv3/extsmail.svg)
-
-### Status
+### Travis build status
 [![Build Status](https://travis-ci.org/oliv3/extsmail.png)](https://travis-ci.org/oliv3/extsmail)
