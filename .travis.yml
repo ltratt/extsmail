@@ -13,3 +13,17 @@ notifications:
       - olivier@biniou.info
     on_success: change
     on_failure: always
+
+env:
+  global:
+   - secure: "iXcjtD4y+hti0EGBRYzxJJhzVawlElU96kLSmEkG6uQTPiNc535sOiSw42/WEIgnpmjCmurOfqXIPOcFbxco1cWrNI2owuM50tuE0BuMXOqIgl8rVIUZDAzqJbLbRsbNxOh/pthwERrBKKwQVDF5mfYwPWrzXaNVWKgC29xWj+0="
+
+addons:
+  coverity_scan:
+    project:
+      name: "oliv3/extsmail"
+      description: "Build submitted via Travis CI"
+    notification_email: olivier@biniou.info
+    build_command_prepend: "./configure; make clean"
+    build_command:   "make"
+    branch_pattern: coverity_scan
