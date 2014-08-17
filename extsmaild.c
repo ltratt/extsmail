@@ -178,7 +178,7 @@ static void obtain_lock(Conf *conf)
 
 Group *groups = NULL;
 extern int yyeparse(void);
-static FILE *yyein = NULL;
+extern FILE *yyein;
 
 
 

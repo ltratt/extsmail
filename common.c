@@ -55,7 +55,7 @@ extern int yycparse(void);
 #if HAVE_YYLEX_DESTROY
 extern void yyclex_destroy(void);
 #endif
-static FILE *yycin = NULL;
+extern FILE *yycin;
 Conf *conf = NULL; // Global variable needed for Yacc. Sigh.
 
 //
