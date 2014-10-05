@@ -114,7 +114,7 @@ typedef struct {
 extern char* __progname;
 
 static void read_externals(void);
-static void free_groups(Group *);
+static void free_groups();
 static int try_externals_path(const char *);
 static bool cycle(Conf *, Group *, Status *);
 static bool try_groups(Conf *, Status *, const char *, int);
@@ -298,23 +298,18 @@ static void free_externals(External *external)
 }
 
 
-static void free_groups(Group *group)
+static void free_groups()
 {
-    if (NULL == group)
+    if (groups == NULL)
         return;
 
-    Group *next = group->next;
-
-#if DBG_LEAKS
-    fprintf(stderr, "GRO free_groups(%p)\n", (void *)group);
-    fprintf(stderr, "GRO free_groups group->next= %p\n", (void *)group->next);
-#endif
-
-    free_matches(group->matches);
-    free_externals(group->externals);
-    free(group);
-
-    free_groups(next);
+    Group *cur = groups;
+    while (cur != NULL) {
+        free_matches(cur->matches);
+        free_externals(cur->externals);
+        cur = cur->next;
+        free(cur);
+    }
 }
 
 #if HAVE_YYLEX_DESTROY
@@ -1463,7 +1458,7 @@ static void check_externals(const char *file)
     if (rtn == 0) {
         printf("%s: OK\n", file);
         display_groups(groups, 1);
-        free_groups(groups);
+        free_groups();
     } else {
         fprintf(stderr, "%s: Syntax error, wrong permissions or file not found\n", file);
     }
@@ -1592,7 +1587,7 @@ int main(int argc, char** argv)
         while (1) {
             // Reload the externals file if asked to
             if (reload_config)  {
-                free_groups(groups);
+                free_groups();
                 read_externals();
                 syslog(LOG_INFO, "Reloaded externals");
                 reload_config = 0;
@@ -1682,7 +1677,7 @@ int main(int argc, char** argv)
         closelog();
 
         free_conf(conf);
-        free_groups(groups);
+        free_groups();
 
         return 0;
     }
