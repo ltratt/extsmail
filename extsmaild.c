@@ -363,6 +363,7 @@ static int try_externals_path(const char *path)
         fclose(yyein);
         return -1;
     }
+    assert(groups != NULL);
 
     fclose(yyein);
 #if HAVE_YYLEX_DESTROY
