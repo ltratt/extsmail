@@ -457,14 +457,6 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
     while (1) {
         char *msg_path = NULL;
 
-        // Reload the externals file if asked to
-        if (reload_config)  {
-            free_groups(groups);
-            read_externals();
-            syslog(LOG_INFO, "Reloaded externals");
-            reload_config = 0;
-        }
-
         errno = 0;
         struct dirent *dp = readdir(dirp);
         if (dp == NULL) {
@@ -1597,6 +1589,16 @@ int main(int argc, char** argv)
 
         int unsuccessful_wait = INITIAL_POLL_WAIT;
         while (1) {
+            // Reload the externals file if asked to
+            if (reload_config)  {
+                free_groups(groups);
+                read_externals();
+                syslog(LOG_INFO, "Reloaded externals");
+                reload_config = 0;
+            }
+
+            // The main message sending cycle
+
             bool all_sent = cycle(conf, groups, &status);
 
             if (!all_sent && conf->notify_failure_interval > 0
