@@ -307,8 +307,9 @@ static void free_groups()
     while (cur != NULL) {
         free_matches(cur->matches);
         free_externals(cur->externals);
-        cur = cur->next;
-        free(cur);
+        Group *old = cur;
+        cur = old->next;
+        free(old);
     }
 }
 
