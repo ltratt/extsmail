@@ -13,3 +13,6 @@ More information about extsmail can be found at its webpage:
 
 ### Travis build status
 [![Build Status](https://travis-ci.org/oliv3/extsmail.png)](https://travis-ci.org/oliv3/extsmail)
+
+### OpenHUB
+[![OpenHUB](https://www.openhub.net/p/extsmail/widgets/project_thin_badge.gif)](https://www.openhub.net/p/extsmail)
