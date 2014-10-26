@@ -163,7 +163,7 @@ static void obtain_lock(Conf *conf)
 
     // Install an exit handler and signal trap so that, barring something going
     // catastrophically wrong, the lockfile is removed on exit.
-    
+
     atexit(lock_exit);
     signal(SIGINT, sigterm_trap);
     signal(SIGTERM, sigterm_trap);
@@ -337,14 +337,14 @@ static int try_externals_path(const char *path)
             return 1;
         return -1;
     }
-    
+
     // See whether the externals exists at 'path'.
     struct stat externals_st;
     if (fstat(fileno(yyein), &externals_st) == -1) {
         free(cnd_path);
         return 1;
     }
-    
+
     // Check that the user and group of the externals file match the
     // executing process.
     if (externals_st.st_uid != geteuid() || externals_st.st_gid != getegid()) {
@@ -365,7 +365,7 @@ static int try_externals_path(const char *path)
 #if HAVE_YYLEX_DESTROY
     yyelex_destroy();
 #endif
-    
+
     return 0;
 }
 
@@ -396,7 +396,7 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
         free(msgs_path);
         return false;
     }
-    
+
     if (conf->mode == DAEMON_MODE) {
         // In daemon mode, we try to make sure we don't get "stuck" on the same
         // message. For example, if a message is too big to be sent by the
@@ -437,7 +437,7 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
 
     // Reset all the externals "working" status so that we'll try all of them
     // again.
-    
+
     Group *cur_group = groups;
     while (cur_group != NULL) {
         External *cur_ext = cur_group->externals;
@@ -447,7 +447,7 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
         }
         cur_group = cur_group->next;
     }
-    
+
     bool all_sent = true;
     bool tried_once = false; // Make sure we read every entry at least once.
     int num_successes = 0;   // How many messages have been successfully sent.
@@ -459,7 +459,7 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
         if (dp == NULL) {
             if (errno == 0) {
                 // We've got to the end of the directory.
-                if (conf->mode == DAEMON_MODE) {                    
+                if (conf->mode == DAEMON_MODE) {
                     if (tried_once && start_spool_loc == 0) {
                         // We started this cycle from the start of the directory,
                         // so we can now be sure that we've read everything.
@@ -484,7 +484,7 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
                         start_spool_loc = status->spool_loc = 0;
                         tried_once = false;
                     }
-                        
+
                     // There could be entries between seekdir(0) and
                     // seekdir(status->spool_loc) that we haven't yet tried to
                     // send, so rewind to make sure we have a chance of trying
@@ -512,7 +512,7 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
             syslog(LOG_CRIT, "cycle: asprintf: unable to allocate memory");
             exit(1);
         }
-        
+
         int tries = 3; // Max number of times we'll try to operate on this file.
         while (1) {
             int fd = open(msg_path, O_RDONLY);
@@ -567,7 +567,7 @@ next_try:
             // been written to the spool file) or we weren't able to gain the
             // lock at all. Assuming we haven't tried this too many times, we now
             // try sleeping for a second and then having another go.
-            
+
             tries -= 1;
             if (tries < 0) {
                 all_sent = false;
@@ -598,7 +598,7 @@ next_msg:
 
     closedir(dirp);
     free(msgs_path);
-    
+
     if (conf->mode == DAEMON_MODE) {
         if (all_sent) {
             status->spool_loc = 0;
@@ -643,7 +643,7 @@ next_msg:
 static bool read_argv(const char *msg_path, int fd, char ***rargv, int *rnargv)
 {
     // Check that the version string is one we can handle.
-    
+
     char *vs = fdrdline(fd); // Version string
     if (vs == NULL || strcmp(vs, VERSION1_ID) != 0) {
         if (vs != NULL)
@@ -652,9 +652,9 @@ static bool read_argv(const char *msg_path, int fd, char ***rargv, int *rnargv)
         return false;
     }
     free(vs);
-    
+
     // Process all the arguments given to extsmail.
-    
+
     char *nas = fdrdline(fd); // Number of arguments
     if (nas == NULL) {
         syslog(LOG_ERR, "Corrupted message '%s'", msg_path);
@@ -687,7 +687,7 @@ static bool read_argv(const char *msg_path, int fd, char ***rargv, int *rnargv)
             syslog(LOG_ERR, "Invalid argument size in '%s'", msg_path);
             return false;
         };
-        
+
         char *arg = malloc(sa + 1);
         if (arg == NULL) {
             syslog(LOG_CRIT, "try_groups: malloc: %m");
@@ -696,7 +696,7 @@ static bool read_argv(const char *msg_path, int fd, char ***rargv, int *rnargv)
 
         ssize_t nr = read(fd, arg, sa + 1);
         if (nr < sa + 1 // Note this also captures nr == 0 and nr == -1
-          || arg[sa] != '\n') { 
+          || arg[sa] != '\n') {
             for (int j = 0; j < i; j += 1)
                 free(argv[j]);
             free(argv);
@@ -705,7 +705,7 @@ static bool read_argv(const char *msg_path, int fd, char ***rargv, int *rnargv)
             return false;
         }
         arg[sa] = '\0';
-        
+
         argv[i] = arg;
     }
     argv[nargv] = NULL;
@@ -763,7 +763,7 @@ static Group *find_group(const char *msg_path, int fd)
         if (dhd_buf_len > 0 && (line[0] == ' ' || line[0] == '\t')) {
             // This line began with space / tab chars, which means it's a
             // continuation of the header in the previous line.
-            
+
             dhd_buf_len -= 1;
         }
         memcpy(dhd_buf + dhd_buf_len, line, line_len);
@@ -772,9 +772,9 @@ static Group *find_group(const char *msg_path, int fd)
         free(line);
     }
     dhd_buf[dhd_buf_len - 1] = 0; // Convert the last newline into a NUL
-    
+
     // Try and find a matching group and then send the message.
-    
+
     Group *group = groups;
     while (group != NULL) {
         if (group->matches == NULL) {
@@ -782,14 +782,14 @@ static Group *find_group(const char *msg_path, int fd)
             // found a matching group.
             break;
         }
-        
+
         Match *match = group->matches;
         while (match != NULL) {
             // XXX at the moment we try and preserve compatibility by
             // NUL-terminating dhd_buf - this means that if NUL-chars appear in
             // the header, unpredictable behaviour might result. Is this a
             // problem?
-            
+
             int rtn = regexec(&match->preg, dhd_buf, 0, NULL, 0);
             if (!(rtn == 0 || rtn == REG_NOMATCH)) {
                 size_t buf_size = regerror(rtn, &match->preg, NULL, 0);
@@ -812,10 +812,10 @@ static Group *find_group(const char *msg_path, int fd)
 
             match = match->next;
         }
-        
+
         // At this point we know that all the matches in this group have been
         // successful - we've found our group!
-        
+
         break;
 
 next_group:
@@ -835,7 +835,7 @@ err:
 //
 // Send the message to the child sendmail process, by copying the contents of
 // 'fd' from the current seek position to the pipe 'cstdin_fd'.
-// 
+//
 // Returns true on success, false on failure. 'rstderrbuf' will point to a
 // malloc'd area of memory which, if the function is successful, will contain
 // 'rstderrbuf_used' bytes read from the child process's stderr (if unsuccessful,
@@ -865,7 +865,7 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
         syslog(LOG_CRIT, "write_to_child: malloc: %m");
         exit(1);
     }
-    
+
     // Set all the files to be non-blocking.
     if (!set_nonblock(fd) || !set_nonblock(cstderr_fd)
       || !set_nonblock(cstdin_fd)) {
@@ -1066,7 +1066,7 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
 
     // We need to record where the actual message starts before calling
     // find_group.
-    
+
     off_t mf_body_off = lseek(fd, 0, SEEK_CUR);
     if (mf_body_off == -1) {
         syslog(LOG_ERR, "Error when lseek'ing from '%s'", msg_path);
@@ -1524,16 +1524,16 @@ int main(int argc, char** argv)
     Conf *conf = read_conf();
 
     read_externals();
-    
+
     obtain_lock(conf);
 
     // In our context, SIGPIPE would occur when a write to a pipe fails, causing
     // us to terminate. Therefore we ignore SIGPIPE's, which means that calls to
     // write will return -1 if EPIPE occurs. Why this isn't the default behaviour
     // is anyone's guess.
-    
+
     signal(SIGPIPE, SIG_IGN);
-    
+
     // Check that everything to do with the spool dir is OK.
 
     if (!check_spool_dir(conf))
@@ -1550,7 +1550,7 @@ int main(int argc, char** argv)
             syslog(LOG_CRIT, "failed to become daemon");
             exit(1);
         }
-        
+
         conf->mode = DAEMON_MODE;
 
         char *msgs_path; // msgs dir (within spool dir)
