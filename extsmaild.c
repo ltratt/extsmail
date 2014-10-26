@@ -1130,13 +1130,23 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
         // report errors to the user).
 
         int pipeto[2], pipefrom[2];
-        if (pipe(pipeto) == -1 || pipe(pipefrom) == -1) {
+        if (pipe(pipeto) == -1) {
+            syslog(LOG_ERR, "try_groups: pipe: %m");
+            goto fail;
+        }
+        if (pipe(pipefrom) == -1) {
+            close(pipeto[0]);
+            close(pipeto[1]);
             syslog(LOG_ERR, "try_groups: pipe: %m");
             goto fail;
         }
 
         pid_t pid = fork();
         if (pid == -1) {
+            close(pipeto[0]);
+            close(pipeto[1]);
+            close(pipefrom[0]);
+            close(pipefrom[1]);
             syslog(LOG_ERR, "try_groups: fork: %m");
             goto fail;
         }
@@ -1146,6 +1156,10 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
             close(STDOUT_FILENO);
             if (dup2(pipeto[0], STDIN_FILENO) == -1 || dup2(pipefrom[1],
               STDERR_FILENO) == -1) {
+                close(pipeto[0]);
+                close(pipeto[1]);
+                close(pipefrom[0]);
+                close(pipefrom[1]);
                 syslog(LOG_CRIT, "try_groups: dup2: %m");
                 goto fail;
             }
@@ -1206,6 +1220,8 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
             // At this point, we know everything has worked, so we just need
             // to cleanup.
 
+            close(pipeto[1]);
+            close(pipefrom[0]);
             close(fd);
             for (int j = 0; j < nargv; j += 1)
                 free(argv[j]);
@@ -1230,6 +1246,8 @@ next_with_kill:
             push_killed_pid(status, pid);
 
 next:
+            close(pipeto[1]);
+            close(pipefrom[0]);
             free(stderrbuf);
             if (lseek(fd, mf_body_off, SEEK_SET) == -1) {
                 syslog(LOG_ERR, "%s: Error when lseek'ing from '%s': %m",
