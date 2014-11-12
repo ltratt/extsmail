@@ -2,7 +2,16 @@
   extsmail history
 ============================================================================
 
-  extsmail 1.8 (2014-06-20)
+  extsmail 2.0 (2014-11-12)
+
+* Reload configuration file when SIGHUP is received.
+
+* Added -t option to check a configuration file without running extsmaild.
+
+* Be more careful to free all file handles.
+
+
+  extsmail 1.9 (2014-06-20)
 
 * Fix bug which could temporarily cause undue CPU to be consumed when a
   large file send was cut off in the middle. This didn't prevent mail being

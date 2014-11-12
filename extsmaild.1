@@ -26,6 +26,7 @@
 .Sh SYNOPSIS
 .Nm extsmaild
 .Op Fl m Ar mode
+.Op Fl t
 .Sh DESCRIPTION
 .Nm
 sends messages spooled by
@@ -50,6 +51,12 @@ switch,
 operates as a long running daemon; it monitors the spool directory and when it notices changes to the directory (or a fixed period has elapsed) it tries to send any unsent messages. This means that even on unreliable networks,
 .Nm
 can easily be left alone and relied upon to ultimately send all messages - without manual intervention.
+.Pp
+The
+.Fl t
+flag can be specified to test the configuration files for
+.Nm
+without running the mail sending process.
 .Sh SEE ALSO
 .Xr extsmail.conf 5 ,
 .Xr extsmail.externals 5 ,
