@@ -71,17 +71,17 @@ char *mk_str(char *);
             if (c == '"') {
                 break;
             }
-            
+
             // Note we always ensure there's 1 spare byte so that we can null
             // terminate the string later.
-            
+
             if (i + 1 == len) {
                 len *= 2;
                 buf = realloc(buf, len);
                 if (buf == NULL)
                     errx(1, "Out of memory");
             }
-            
+
             if (c == '\\') {
                 int c2 = input();
                 switch (c2) {
@@ -107,7 +107,7 @@ char *mk_str(char *);
         if (buf == NULL)
             errx(1, "Fatal error");
         buf[i] = 0;
-        
+
         yyelval.str = buf;
         return TSTRING;
     }
@@ -143,7 +143,5 @@ char *mk_str(char *);
 .   {
         errx(1, "Illegal char '%s'\n", yytext );
     }
-
-
 
 %%

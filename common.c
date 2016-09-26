@@ -80,10 +80,10 @@ Conf *read_conf()
         else if (rtn == -1)
             exit(1);
     }
-    
+
     if (CONF_PATHS[i] == NULL)
         err(1, "Can't find a valid configuration file");
-    
+
     return conf;
 }
 
@@ -118,7 +118,7 @@ static int try_conf_path(const char *path)
             return 1;
         return -1;
     }
-    
+
     if (yycparse() != 0) {
         fclose(yycin);
         return -1;
@@ -152,17 +152,17 @@ bool check_spool_dir(Conf *conf)
     char *mdp; // spool path
     if (asprintf(&mdp, "%s%s%s", conf->spool_dir, DIR_SEP, MSGS_DIR) == -1)
         errx(1, "check_spool_dir: asprintf: unable to allocate memory");
-    
+
     if (!check_dir(mdp)) {
         free(mdp);
         return false;
     }
-        
+
     free(mdp);
 
     return true;
-} 
-   
+}
+
 
 
 static bool check_dir(const char *path)
@@ -175,7 +175,7 @@ static bool check_dir(const char *path)
                 warn("%s", path);
                 return false;
             }
-            
+
             // There's no need to go through the rest of the checks; since
             // mk_dir was successful, spool_dir now exists as a directory with
             // the correct permissions.
@@ -195,7 +195,7 @@ static bool check_dir(const char *path)
     }
 
     // 'path' must have owner only having rwx access.
-    
+
     if ((sd_st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXG))
       != (S_IRUSR | S_IWUSR | S_IXUSR)) {
         warnx("%s: Incorrect permissions (should be %.o)", path,
@@ -224,7 +224,7 @@ char *fdrdline(int fd)
 #   define TMPBUFLEN 128
 
     char tmpbuf[TMPBUFLEN];
-    
+
     char *line = NULL;
     size_t line_len = 0;
     size_t line_alloc = 0;
@@ -244,7 +244,7 @@ char *fdrdline(int fd)
             if (tmpbuf[i] == '\n' || tmpbuf[i] == '\r')
                 break;
         }
-        
+
         if (line == NULL) {
             line_alloc = i + 1;
             line = malloc(line_alloc);
@@ -256,10 +256,10 @@ char *fdrdline(int fd)
             if (line == NULL)
                 errx(1, "fdrdline: realloc");
         }
-        
+
         memcpy(line + line_len, tmpbuf, i);
         line_len += i;
-        
+
         if (i < nr) {
             if (lseek(fd, 1 -(nr - i), SEEK_CUR) == -1) {
                 free(line);
@@ -268,12 +268,12 @@ char *fdrdline(int fd)
             break;
         }
     }
-    
+
     // If we didn't read in any data, then we hit EOF. The user is expected to
     // have detected that condition, so we return NULL.
     if (line == NULL)
         return NULL;
-    
+
     line[line_len] = 0;
 
     return line;
@@ -300,7 +300,7 @@ char *expand_path(const char *path)
     }
     else if (asprintf(&exp_path, "%s", path) == -1)
         errx(1, "expand_path: asprintf: unable to allocate memory");
-    
+
     return exp_path;
 }
 
@@ -313,7 +313,7 @@ char *mk_str(char *str)
         errx(1, "mk_str: malloc");
 
     memmove(buf, str, strlen(str) + 1);
-    
+
     return buf;
 }
 
@@ -333,7 +333,7 @@ char *str_replace(const char *str, const char *old, const char *new)
             i += 1;
         }
     }
-    
+
     char *new_str = malloc(new_size + 1);
     if (new_str == NULL)
         errx(1, "str_replace: malloc");
@@ -350,6 +350,6 @@ char *str_replace(const char *str, const char *old, const char *new)
             new_str[j++] = str[i++];
     }
     new_str[new_size] = 0;
-    
+
     return new_str;
 }

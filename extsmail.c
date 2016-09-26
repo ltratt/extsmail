@@ -51,9 +51,9 @@ int main(int argc, char** argv)
 
     if (!check_spool_dir(conf))
         exit(1);
-    
+
     // Create the spool file.
-    
+
     char *sp; // spool path
     if (asprintf(&sp, "%s%s%s%sXXXXXXXXXX", conf->spool_dir, DIR_SEP, MSGS_DIR,
       DIR_SEP) == -1) {
@@ -64,14 +64,14 @@ int main(int argc, char** argv)
     int sfd;
     if ((sfd = mkstemp(sp)) == -1)
         err(1, "mkstemp: when creating spool file %s", sp);
-    
+
     // We immediately try to gain an exclusive lock on the newly created spool
     // file. If, in between the spool file being created, and us gaining the
     // lock extsmaild gains a lock it will notice that the file is currently
     // 0 bytes long, and that therefore the file is incomplete. extsmaild will
     // then relinquish its lock, allowing us to gain it and write the file in
     // full.
-    
+
     if (flock(sfd, LOCK_EX) == -1)
         err(1, "flock: when locking spool file %s", sp);
 
@@ -83,7 +83,7 @@ int main(int argc, char** argv)
     //   4) Newline
     //   5) Each command line argument, with the format "<len(arg)>\n<arg>\n".
     //   6) The mail contents as read from stdin
-    
+
     FILE *sf;
     if ((sf = fdopen(sfd, "w")) == NULL)
         err(1, "main: fdopen");
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
     // Write out all the command-line args
 
     SPOOL_WRITE("%d\n", argc - 1);
-    
+
     for (int i = 1; i < argc; i += 1)
         SPOOL_WRITE("%zd\n%s\n", strlen(argv[i]), argv[i]);
 
@@ -117,11 +117,11 @@ int main(int argc, char** argv)
             errx(1, "main: fwrite: when writing to spool file");
 
         total_nr += nr;
-        
+
         if (feof(stdin) != 0)
             break;
     }
-    
+
     fflush(sf);
     fclose(sf);
 
@@ -129,12 +129,12 @@ int main(int argc, char** argv)
     // since there's no message to send. This is designed to prevent
     // annoying-ness when extsmail is incorrectly called and ctrl-D pressed
     // immediately.
-    
+
     if (total_nr == 0)
         unlink(sp);
 
     flock(sfd, LOCK_UN);
     close(sfd);
-    
+
     return 0;
 }
