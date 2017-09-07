@@ -56,13 +56,11 @@ AH_TEMPLATE(HAVE_KQUEUE,
   [Define if your platform has the kqueue family of functions.])
 AC_CHECK_FUNC(kqueue, [AC_DEFINE(HAVE_KQUEUE)])
 
-
 # inotify (Linux)
 
 AH_TEMPLATE(HAVE_INOTIFY,
   [Define if your platform has the inotify family of functions.])
 AC_CHECK_HEADERS(sys/inotify.h, [AC_DEFINE(HAVE_INOTIFY)])
-
 
 # fileno (Linux)
 
