@@ -392,7 +392,7 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
 
     DIR *dirp = opendir(msgs_path);
     if (dirp == NULL) {
-        syslog(LOG_ERR, "When opening spool dir: %m");
+        syslog(LOG_ERR, "When opening spool dir: %s", strerror (errno));
         free(msgs_path);
         return false;
     }
@@ -690,7 +690,7 @@ static bool read_argv(const char *msg_path, int fd, char ***rargv, int *rnargv)
 
         char *arg = malloc(sa + 1);
         if (arg == NULL) {
-            syslog(LOG_CRIT, "try_groups: malloc: %m");
+            syslog(LOG_CRIT, "try_groups: malloc: %s", strerror (errno));
             exit(1);
         }
 
@@ -755,7 +755,7 @@ static Group *find_group(const char *msg_path, int fd)
             dhb_buf_alloc += HEADER_BUF;
             dhd_buf = realloc(dhd_buf, dhb_buf_alloc);
             if (dhd_buf == NULL) {
-                syslog(LOG_CRIT, "try_groups: realloc: %m");
+                syslog(LOG_CRIT, "try_groups: realloc: %s", strerror (errno));
                 exit(1);
             }
         }
@@ -795,7 +795,7 @@ static Group *find_group(const char *msg_path, int fd)
                 size_t buf_size = regerror(rtn, &match->preg, NULL, 0);
                 char *buf = malloc(buf_size);
                 if (buf == NULL) {
-                    syslog(LOG_CRIT, "try_groups: malloc: %m");
+                    syslog(LOG_CRIT, "try_groups: malloc: %s", strerror (errno));
                     exit(1);
                 }
                 regerror(rtn, &match->preg, buf, buf_size);
@@ -862,7 +862,7 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
     bool eof_fd = false, eof_cstderr = false;
 
     if (fdbuf == NULL || stderrbuf == NULL) {
-        syslog(LOG_CRIT, "write_to_child: malloc: %m");
+        syslog(LOG_CRIT, "write_to_child: malloc: %s", strerror (errno));
         exit(1);
     }
 
@@ -998,7 +998,7 @@ bool write_to_child(External *cur_ext, const char *msg_path, int fd, int cstderr
                 stderrbuf_alloc += STDERR_BUF_ALLOC;
                 stderrbuf = realloc(stderrbuf, stderrbuf_alloc);
                 if (stderrbuf == NULL) {
-                    syslog(LOG_CRIT, "try_groups: realloc: %m");
+                    syslog(LOG_CRIT, "try_groups: realloc: %s", strerror (errno));
                     exit(1);
                 }
             }
@@ -1029,8 +1029,8 @@ cstdin_err:
     goto err;
 
 cstderr_err:
-    syslog(LOG_ERR, "%s: When reading stderr from '%s': %m",
-      cur_ext->name, cur_ext->sendmail);
+    syslog(LOG_ERR, "%s: When reading stderr from '%s': %s",
+      cur_ext->name, cur_ext->sendmail, strerror (errno));
     goto err;
 
 err:
@@ -1078,7 +1078,7 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
         goto fail;
     }
     if (lseek(fd, mf_body_off, SEEK_SET) == -1) {
-        syslog(LOG_ERR, "Error when lseek'ing from '%s': %m", msg_path);
+        syslog(LOG_ERR, "Error when lseek'ing from '%s': %s", msg_path, strerror (errno));
         goto fail;
     }
 
@@ -1131,13 +1131,13 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
 
         int pipeto[2], pipefrom[2];
         if (pipe(pipeto) == -1) {
-            syslog(LOG_ERR, "try_groups: pipe: %m");
+            syslog(LOG_ERR, "try_groups: pipe: %s", strerror (errno));
             goto fail;
         }
         if (pipe(pipefrom) == -1) {
             close(pipeto[0]);
             close(pipeto[1]);
-            syslog(LOG_ERR, "try_groups: pipe: %m");
+            syslog(LOG_ERR, "try_groups: pipe: %s", strerror (errno));
             goto fail;
         }
 
@@ -1147,7 +1147,7 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
             close(pipeto[1]);
             close(pipefrom[0]);
             close(pipefrom[1]);
-            syslog(LOG_ERR, "try_groups: fork: %m");
+            syslog(LOG_ERR, "try_groups: fork: %s", strerror (errno));
             goto fail;
         }
         else if (pid == 0) {
@@ -1160,7 +1160,7 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
                 close(pipeto[1]);
                 close(pipefrom[0]);
                 close(pipefrom[1]);
-                syslog(LOG_CRIT, "try_groups: dup2: %m");
+                syslog(LOG_CRIT, "try_groups: dup2: %s", strerror (errno));
                 goto fail;
             }
             close(pipeto[0]);
@@ -1171,7 +1171,7 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
             char **sub_argv = malloc((nargv + cur_ext->sendmail_nargv + 1) *
               sizeof(char *));
             if (sub_argv == NULL) {
-                syslog(LOG_CRIT, "try_groups: malloc: %m");
+                syslog(LOG_CRIT, "try_groups: malloc: %s", strerror (errno));
                 exit(1);
             }
 
@@ -1183,7 +1183,7 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
 
             execvp(cur_ext->sendmail_argv[0], (char **const) sub_argv);
             free(sub_argv);
-            syslog(LOG_CRIT, "try_groups: execvp: %m");
+            syslog(LOG_CRIT, "try_groups: execvp: %s", strerror (errno));
             goto fail;
         }
         else {
@@ -1250,8 +1250,8 @@ next:
             close(pipefrom[0]);
             free(stderrbuf);
             if (lseek(fd, mf_body_off, SEEK_SET) == -1) {
-                syslog(LOG_ERR, "%s: Error when lseek'ing from '%s': %m",
-                  cur_ext->name, msg_path);
+                syslog(LOG_ERR, "%s: Error when lseek'ing from '%s': %s",
+                  cur_ext->name, msg_path, strerror (errno));
                 goto fail;
             }
 
@@ -1570,13 +1570,13 @@ int main(int argc, char** argv)
 #ifdef HAVE_KQUEUE
         int kq = kqueue();
         if (kq == -1) {
-            syslog(LOG_CRIT, "main: kqueue: %m");
+            syslog(LOG_CRIT, "main: kqueue: %s", strerror (errno));
             exit(1);
         }
 
         int smf = open(msgs_path, O_RDONLY);
         if (smf == -1) {
-            syslog(LOG_CRIT, "When opening '%s': %m", msgs_path);
+            syslog(LOG_CRIT, "When opening '%s': %s", msgs_path, strerror (errno));
             exit(1);
         }
 
@@ -1590,12 +1590,12 @@ int main(int argc, char** argv)
 #elif HAVE_INOTIFY
         int fd = inotify_init();
         if (fd < 0) {
-            syslog(LOG_CRIT, "main: inotify_init: %m");
+            syslog(LOG_CRIT, "main: inotify_init: %s", strerror (errno));
             exit(1);
         }
 
         if (inotify_add_watch(fd, msgs_path, IN_CLOSE_WRITE) < 0) {
-            syslog(LOG_CRIT, "main: inotify_add_watch: %m");
+            syslog(LOG_CRIT, "main: inotify_add_watch: %s", strerror (errno));
             exit(1);
         }
 #endif

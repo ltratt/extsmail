@@ -43,13 +43,6 @@ AC_GNU_SOURCE
 
 CFLAGS="$CFLAGS -std=c99 -Wall -pedantic -Wextra"
 
-# gcc (at least 4.9) emits
-#   "warning: ISO C does not support the ‘%m’ gnu_printf format"
-# clang does not
-if test "x${CC}" = "xgcc"; then
-	CFLAGS="$CFLAGS -Wno-format"
-fi
-
 # kqueue (*BSD)
 
 AH_TEMPLATE(HAVE_KQUEUE,
