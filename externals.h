@@ -41,7 +41,7 @@ typedef struct _ext {
     time_t last_success;        // The time of the last successful execution of
                                 // this external. If set to 0, this external has
                                 // not previously been tried.
-    time_t timeout;             // How many seconds before assuming this external
+    long timeout;               // How many seconds before assuming this external
                                 // is dead. If set to 0, means there is no
                                 // timeout for this external.
 
