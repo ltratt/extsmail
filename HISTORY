@@ -2,6 +2,11 @@
   extsmail history
 ============================================================================
 
+  extsmail 2.1 (2017-11-25)
+
+* Build fix for more recent C compilers.
+
+
   extsmail 2.0 (2014-11-12)
 
 * Reload configuration file when SIGHUP is received.
@@ -126,6 +131,6 @@
 * Fixes bug where exec'd externals first parameter was not correctly set.
 
 
-  extsmail 0.1 (2008-11-11) 
-  
+  extsmail 0.1 (2008-11-11)
+
 * First public release.
