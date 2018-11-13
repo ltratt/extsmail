@@ -24,14 +24,12 @@
 
 #include <err.h>
 #include <errno.h>
-#include <regex.h>
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
 
 #include "conf.h"
 #include "common.h"
-#include "externals.h"
 #include "externals_parser.tab.h"
 
 char *mk_str(char *);
