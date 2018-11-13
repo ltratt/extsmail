@@ -1512,6 +1512,7 @@ int main(int argc, char** argv)
                 break;
             case 'h':
                 usage(0);
+                break;
             case 't':
                 check_externals(optarg);
                 exit(0);
