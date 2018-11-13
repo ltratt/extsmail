@@ -63,7 +63,7 @@ esac
 
 # set hardening flags
 
-LDFLAGS="$LDFLAGS -Wl,-z,relro"
+LDFLAGS="$LDFLAGS -Wl,-z,relro,-z,now"
 
 # strtonum
 
