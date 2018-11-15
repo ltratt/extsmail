@@ -112,7 +112,7 @@ looks as follows:
 .Bd -literal -offset indent
 group {
     external mymachine {
-        sendmail = "/usr/bin/ssh \-q \-C \-l user mymachine.net /usr/sbin/sendmail"
+        sendmail = "/usr/bin/ssh \-q \-C \-l user mymachine.net /usr/sbin/sendmail -t"
     }
 }
 .Ed
@@ -131,17 +131,17 @@ group {
     match header "^To:.*@foo.com"
 
     external foo {
-        sendmail = "/usr/bin/ssh \-q \-C \-l user shell.foo.com /usr/sbin/sendmail"
+        sendmail = "/usr/bin/ssh \-q \-C \-l user shell.foo.com /usr/sbin/sendmail -t"
     }
 }
 
 group {
     external mymachine {
-        sendmail = "/usr/bin/ssh \-q \-C \-l user mymachine.net /usr/sbin/sendmail"
+        sendmail = "/usr/bin/ssh \-q \-C \-l user mymachine.net /usr/sbin/sendmail -t"
     }
 
     external bk {
-        sendmail = "/usr/bin/ssh \-q \-C \-l user bk.mymachine.net /usr/sbin/sendmail"
+        sendmail = "/usr/bin/ssh \-q \-C \-l user bk.mymachine.net /usr/sbin/sendmail -t"
     }
 }
 .Ed
