@@ -2,6 +2,16 @@
   extsmail history
 ============================================================================
 
+  extsmail 2.2 (2018-11-30)
+
+* Suggest using "-t" with sendmail in examples (some sendmail clones require
+  this switch).
+
+* Use "-z,now" when linking.
+
+* Fix two minor compiler warnings.
+
+
   extsmail 2.1 (2017-11-25)
 
 * Build fix for more recent C compilers.
