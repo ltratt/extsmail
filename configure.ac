@@ -1,4 +1,4 @@
-# Copyright (C)2008 Laurence Tratt http:#tratt.net/laurie/
+# Copyright (C)2008 Laurence Tratt https://tratt.net/laurie/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -19,7 +19,11 @@
 # IN THE SOFTWARE.
 
 
-AC_INIT([extsmail], EXTSMAIL_VERSION)
+AC_INIT([extsmail],[2.2],[https://tratt.net/laurie/])
+AC_PREREQ([2.68])
+AC_CONFIG_SRCDIR([extsmaild.c])
+AM_INIT_AUTOMAKE([1.11 foreign -Wall -Werror subdir-objects])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 ################################################################################
 # Generic initialization
@@ -31,6 +35,7 @@ AC_LANG(C)
 
 AC_PROG_CC
 AC_PROG_LEX
+AC_PROG_YACC
 AC_PROG_SED
 AC_ISC_POSIX
 AC_PROG_GCC_TRADITIONAL
@@ -41,7 +46,7 @@ AC_GNU_SOURCE
 # Function / feature checks
 #
 
-CFLAGS="$CFLAGS -std=c99 -Wall -pedantic -Wextra"
+CFLAGS="$CFLAGS -std=c99 -Wall -pedantic -Wextra -Werror"
 
 # kqueue (*BSD)
 
@@ -90,5 +95,5 @@ esac
 # Output
 #
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile compat/Makefile])
 AC_OUTPUT
