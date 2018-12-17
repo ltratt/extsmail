@@ -8,3 +8,12 @@ messages, and later trying to send them by user-defined commands.
 A typical use of extsmail is to allow users who regularly move between different
 networks and / or find themselves regularly offline, to ensure that their e-mail
 is sent reliably via ssh to external servers.
+
+## Installation
+
+```sh
+$ autoreconf -i
+$ ./configure
+$ make
+$ sudo make install
+```
