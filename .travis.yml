@@ -9,7 +9,9 @@ compiler:
 script:
   - autoreconf -i
   - ./configure
-  - make
+  - make -j 8
+  - make clean
+  - make -j 32
 
 addons:
   coverity_scan:
