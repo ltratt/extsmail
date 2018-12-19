@@ -23,6 +23,10 @@ EXTRA_DIST = conf_parser.y conf_tokenizer.l \
 	$(man1_MANS) $(man5_MANS)
 
 
+common.o: conf_parser.tab.o
+conf_tokenizer.o: conf_parser.tab.o
+externals_tokenizer.o: externals_parser.tab.o
+
 conf_parser.tab.c: conf_parser.y
 	@$(YACC) -p yyc -d -b conf_parser $(DESTDIR)$(srcdir)/conf_parser.y
 
