@@ -1491,8 +1491,14 @@ static void check_externals(const char *file)
 
 static void usage(int rtn_code)
 {
-    fprintf(stderr, "Usage: %s [-m <batch|daemon>] [-t <conf>]\n", __progname);
+    fprintf(stderr, "Usage: %s [-hv] [-m <batch|daemon>] [-t <conf>]\n", __progname);
     exit(rtn_code);
+}
+
+
+static void version()
+{
+  puts(PACKAGE_NAME " " PACKAGE_VERSION);
 }
 
 
@@ -1500,7 +1506,7 @@ int main(int argc, char** argv)
 {
     Mode mode = BATCH_MODE;
     int ch;
-    while ((ch = getopt(argc, argv, "hm:t:")) != -1) {
+    while ((ch = getopt(argc, argv, "hm:t:v")) != -1) {
         switch (ch) {
             case 'm':
                 if (strcmp(optarg, "batch") == 0)
@@ -1515,6 +1521,10 @@ int main(int argc, char** argv)
                 break;
             case 't':
                 check_externals(optarg);
+                exit(0);
+                break;
+            case 'v':
+                version();
                 exit(0);
                 break;
             default:
