@@ -27,6 +27,7 @@
 .Nm extsmaild
 .Op Fl m Ar mode
 .Op Fl t
+.Op Fl v
 .Sh DESCRIPTION
 .Nm
 sends messages spooled by
@@ -57,6 +58,10 @@ The
 flag can be specified to test the configuration files for
 .Nm
 without running the mail sending process.
+.Pp
+The
+.Fl v
+flag prints version info to stdout, then exits.
 .Sh SEE ALSO
 .Xr extsmail.conf 5 ,
 .Xr extsmail.externals 5 ,
