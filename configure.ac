@@ -58,7 +58,7 @@ AC_CHECK_HEADERS(sys/inotify.h, [AC_DEFINE(HAVE_INOTIFY)])
 # fileno (Linux)
 
 case `uname -s` in
-  Linux* ) CFLAGS="$CFLAGS -D_POSIX_C_SOURCE=2";;
+  Linux*|GNU* ) CFLAGS="$CFLAGS -D_POSIX_C_SOURCE=2";;
 esac
 
 # set hardening flags
