@@ -1,0 +1,75 @@
+extsmail (2.2-4) unstable; urgency=low
+
+  * debian/tests/control: Fix typo in Test-Command.
+
+ -- Olivier Girondel <olivier@biniou.info>  Tue, 12 Feb 2019 11:36:19 +0100
+
+extsmail (2.2-3) unstable; urgency=low
+
+  * debian/patches/*: Fix implicit-declaration.
+  * debian/rules: Add --no-parallel.
+  * debian/control: Standards-Version: 4.3.0.
+  * debian/tests/control: Add Restrictions: allow-stderr.
+
+ -- Olivier Girondel <olivier@biniou.info>  Sun, 10 Feb 2019 00:12:20 +0100
+
+extsmail (2.2-2) unstable; urgency=low
+
+  * debian/control: Remove Vcs-Git.
+  * debian/patches/*: Fix FTBFS.
+  * debian/rules: Remove --no-parallel.
+  * [bartm] restored changelog.
+
+ -- Olivier Girondel <olivier@biniou.info>  Wed, 19 Dec 2018 23:27:42 +0100
+
+extsmail (2.2-1) unstable; urgency=low
+
+  * New upstream release 2.2. (Closes: #748739)
+  * debian/compat: Upgrade to 11.
+  * debian/control: Priority: optional.
+  * debian/control: Vcs-Browser: https://github.com/ltratt/extsmail.
+  * debian/control: Vcs-Git: https://github.com/oliv3/extsmail-debian.
+  * debian/control: Build-Depends: Remove dh-autoreconf.
+  * debian/control: Build-Depends: Update debhelper (>= 11).
+  * debian/control: Update Homepage.
+  * debian/control: Standards-Version: 4.2.1.
+  * debian/copyright: Update copyright years.
+  * debian/copyright: Update Source URL.
+  * debian/copyright: Use secure copyright format URI.
+  * debian/rules: Remove --with autoreconf.
+  * debian/rules: Add --no-parallel.
+  * debian/tests/control: Added.
+  * debian/watch: version=4.
+  * debian/watch: Use secure URI.
+
+ -- Olivier Girondel <olivier@biniou.info>  Tue, 13 Nov 2018 16:12:07 +0100
+
+extsmail (2.0-2) unstable; urgency=low
+
+  * Upload to unstable.
+
+ -- Olivier Girondel <olivier@biniou.info>  Thu, 14 May 2015 22:55:21 +0200
+
+extsmail (2.0-1) experimental; urgency=low
+
+  * New upstream 2.0 release.
+  * debian/control: Standards-Version: 3.9.6.
+
+ -- Olivier Girondel <olivier@biniou.info>  Fri, 14 Nov 2014 00:35:33 +0100
+
+extsmail (1.9-1) unstable; urgency=low
+
+  * New upstream 1.9 release.
+  * debian/control: Standards-Version: 3.9.5.
+  * debian/control: Build-Depends: debhelper (>= 9), dh-autoreconf.
+  * debian/compat: Update to 9.
+  * debian/copyright: Update years.
+  * debian/rules: Use --with autoreconf.
+
+ -- Olivier Girondel <olivier@biniou.info>  Fri, 20 Jun 2014 20:43:32 +0100
+
+extsmail (1.4-1) unstable; urgency=low
+
+  * Initial release (Closes: #652731)
+
+ -- Olivier Girondel <olivier@biniou.info>  Tue, 20 Dec 2011 21:33:46 +0100

@@ -1,0 +1,13 @@
+Description: fileno() requires -D_POSIX_C_SOURCE on GNU kernels
+
+--- extsmail-2.2.orig/configure.ac
++++ extsmail-2.2/configure.ac
+@@ -58,7 +58,7 @@ AC_CHECK_HEADERS(sys/inotify.h, [AC_DEFI
+ # fileno (Linux)
+ 
+ case `uname -s` in
+-  Linux* ) CFLAGS="$CFLAGS -D_POSIX_C_SOURCE=2";;
++  Linux*|GNU* ) CFLAGS="$CFLAGS -D_POSIX_C_SOURCE=2";;
+ esac
+ 
+ # set hardening flags
