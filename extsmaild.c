@@ -1206,7 +1206,7 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
             int rtn_status;
             if (waitpid(pid, &rtn_status, 0) || WIFEXITED(rtn_status)) {
                 int child_rtn = WEXITSTATUS(rtn_status);
-                if (child_rtn == 0) {
+                if (child_rtn != 0) {
                     if (stderrbuf_used == 0) {
                         syslog(LOG_ERR, "%s: Received error %d when executing "
                           "'%s' on '%s'", cur_ext->name, child_rtn,
