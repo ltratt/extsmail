@@ -43,6 +43,12 @@ AC_GNU_SOURCE
 
 CFLAGS="$CFLAGS -std=c99 -Wall -pedantic -Wextra -Werror -pedantic-errors"
 
+# pledge
+
+AH_TEMPLATE(HAVE_PLEDGE,
+	      [Define if your platform has the pledge(2) syscall.])
+AC_CHECK_HEADERS(sys/pledge.h, [AC_DEFINE(HAVE_PLEDGE)])
+
 # kqueue (*BSD)
 
 AH_TEMPLATE(HAVE_KQUEUE,

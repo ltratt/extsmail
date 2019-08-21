@@ -45,6 +45,11 @@ extern char* __progname;
 
 int main(int argc, char** argv)
 {
+#ifdef HAVE_PLEDGE
+    if (pledge("stdio rpath wpath cpath flock getpw", NULL) == -1)
+        err(EXIT_FAILURE, "pledge");
+#endif
+
     Conf *conf = read_conf();
 
     // Check that everything to do with the spool dir is OK.

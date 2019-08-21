@@ -1510,6 +1510,11 @@ static void version()
 
 int main(int argc, char** argv)
 {
+#ifdef HAVE_PLEDGE
+    if (pledge("stdio rpath wpath cpath flock getpw proc exec", NULL) == -1)
+        err(EXIT_FAILURE, "pledge");
+#endif
+
     Mode mode = BATCH_MODE;
     int ch;
     while ((ch = getopt(argc, argv, "hm:t:v")) != -1) {
