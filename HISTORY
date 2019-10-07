@@ -2,6 +2,21 @@
   extsmail history
 ============================================================================
 
+  extsmail 2.3 (2019-10-09)
+
+* Have autoconf decide whether to use lex/yacc or flex/bison.
+
+* Add pledge support for extsmail and extsmaild on OS's that support it.
+
+* If a child process fails, but doesn't print anything to stderr, then
+  format the result more nicely.
+
+* Build correctly on Linux distributions that identify as GNU rather than
+  Linux.
+
+* extsmaild -v now prints extsmail's version number.
+
+
   extsmail 2.2 (2018-11-30)
 
 * Suggest using "-t" with sendmail in examples (some sendmail clones require
