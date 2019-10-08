@@ -2,6 +2,8 @@ CC=@CC@
 CFLAGS=@CFLAGS@
 LIBS=@LIBS@
 LDFLAGS=@LDFLAGS@
+LEX=@LEX@
+YACC=@YACC@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
@@ -27,19 +29,19 @@ extsmaild: ${EXTSMAILD_OBJS}
 
 
 conf_parser.tab.c: conf_parser.y
-	yacc -p yyc -d -b conf_parser conf_parser.y
+	${YACC} -p yyc -d -b conf_parser conf_parser.y
 
 
 conf_tokenizer.c: conf_tokenizer.l
-	lex -Pyyc -oconf_tokenizer.c conf_tokenizer.l
+	${LEX} -Pyyc -oconf_tokenizer.c conf_tokenizer.l
 
 
 externals_parser.tab.c: externals_parser.y
-	yacc -p yye -d -b externals_parser externals_parser.y
+	${YACC} -p yye -d -b externals_parser externals_parser.y
 
 
 externals_tokenizer.c: externals_tokenizer.l
-	lex -Pyye -oexternals_tokenizer.c externals_tokenizer.l
+	${LEX} -Pyye -oexternals_tokenizer.c externals_tokenizer.l
 
 
 install: all
