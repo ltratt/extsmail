@@ -42,7 +42,7 @@ AC_GNU_SOURCE
 # Function / feature checks
 #
 
-CFLAGS="$CFLAGS -std=c99 -Wall -pedantic -Wextra -Werror -pedantic-errors"
+CFLAGS="$CFLAGS -std=c99 -Wall -pedantic -Wextra"
 
 # pledge
 
