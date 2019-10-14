@@ -2,7 +2,7 @@
   extsmail history
 ============================================================================
 
-  extsmail 2.3 (2019-10-09)
+  extsmail 2.3 (2019-10-14)
 
 * Have autoconf decide whether to use lex/yacc or flex/bison.
 
