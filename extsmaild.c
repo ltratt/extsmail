@@ -1151,7 +1151,9 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
             goto fail;
         }
         else if (pid == 0) {
-            // Child / sendmail process.
+            // Child / sendmail process. Any errors in this branch should cause
+            // the child process to exit rather than try to continue executing
+            // as if it was the parent process.
 
             close(STDOUT_FILENO);
             if (dup2(pipeto[0], STDIN_FILENO) == -1 || dup2(pipefrom[1],
@@ -1161,7 +1163,7 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
                 close(pipefrom[0]);
                 close(pipefrom[1]);
                 syslog(LOG_CRIT, "try_groups: dup2: %s", strerror (errno));
-                goto fail;
+                exit(1);
             }
             close(pipeto[0]);
             close(pipeto[1]);
@@ -1184,7 +1186,7 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
             execvp(cur_ext->sendmail_argv[0], (char **const) sub_argv);
             free(sub_argv);
             syslog(LOG_CRIT, "try_groups: execvp: %s", strerror (errno));
-            goto fail;
+            exit(1);
         }
         else {
             // Parent process.
