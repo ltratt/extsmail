@@ -561,10 +561,6 @@ next_try:
         free(msg_path);
         if (conf->mode == DAEMON_MODE) {
             status->spool_loc += 1;
-            if (!all_sent) {
-                break;
-            }
-
             if (tried_once && start_spool_loc == status->spool_loc) {
                 // We've read all the directory entries at least once.
                 break;
