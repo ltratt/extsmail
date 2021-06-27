@@ -432,8 +432,8 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
             }
         }
     }
-    long start_spool_loc, spool_loc;
-    start_spool_loc = spool_loc = status->spool_loc;
+    long start_spool_loc;
+    start_spool_loc = status->spool_loc;
 
     // Reset all the externals "working" status so that we'll try all of them
     // again.
@@ -465,12 +465,12 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
                         // so we can now be sure that we've read everything.
                         break;
                     }
-                    // This cycle started part way through, possibly because
-                    // some messages are stuck, or files were deleted. Reset
+                    // This cycle started part way through (possibly because
+                    // some messages are stuck) or files were deleted. Reset
                     // the directory read to the beginning and try cycling
                     // through the whole thing again.
                     rewinddir(dirp);
-                    spool_loc = 0 = start_spool_loc = status->spool_loc = 0;
+                    start_spool_loc = status->spool_loc = 0;
                     tried_once = false;
                     continue;
                 }
@@ -485,7 +485,7 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
 
         // The entries "." and ".." are, fairly obviously, not messages.
         if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0) {
-            spool_loc += 1;
+            status->spool_loc += 1;
             continue;
         }
 
@@ -559,17 +559,16 @@ next_try:
         }
 
         free(msg_path);
-        if (conf->mode == DAEMON_MODE && !all_sent) {
-            status->spool_loc = spool_loc + 1;
-            break;
-        }
-
         if (conf->mode == DAEMON_MODE) {
-            if (tried_once && spool_loc == start_spool_loc) {
+            status->spool_loc += 1;
+            if (!all_sent) {
+                break;
+            }
+
+            if (tried_once && start_spool_loc == status->spool_loc) {
                 // We've read all the directory entries at least once.
                 break;
             }
-            spool_loc += 1;
             tried_once = true;
         }
     }
