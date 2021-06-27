@@ -449,7 +449,7 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
     }
 
     bool all_sent = true;
-    bool tried_once = false; // Make sure we read every entry at least once.
+    bool tried_once = false; // Make sure we've tried at least one file.
     int num_successes = 0;   // How many messages have been successfully sent.
     while (1) {
         char *msg_path = NULL;
