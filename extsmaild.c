@@ -577,14 +577,11 @@ next_try:
             sleep(1);
         }
 
+        free(msg_path);
         if (conf->mode == DAEMON_MODE && !all_sent) {
             status->spool_loc = spool_loc + 1;
-            free(msg_path);
             break;
         }
-
-        if (msg_path)
-            free(msg_path);
 
         if (conf->mode == DAEMON_MODE) {
             if (tried_once && spool_loc == start_spool_loc) {
