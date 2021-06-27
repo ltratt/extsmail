@@ -503,9 +503,10 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
         }
 
         // The entries "." and ".." are, fairly obviously, not messages.
-
-        if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0)
-            goto next_msg;
+        if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0) {
+            spool_loc += 1;
+            continue;
+        }
 
         if (asprintf(&msg_path, "%s%s%s%s%s", conf->spool_dir, DIR_SEP,
           MSGS_DIR, DIR_SEP, dp->d_name) == -1) {
@@ -582,7 +583,6 @@ next_try:
             break;
         }
 
-next_msg:
         if (msg_path)
             free(msg_path);
 
