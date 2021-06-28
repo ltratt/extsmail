@@ -409,13 +409,16 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
         //   1: a, b, c
         //   2: b, c, a
         //   3: c, a, b
+        // Note that this is only a "best effort": the order that files are
+        // returned by readdir() is undefined, though on most operating systems
+        // it is likely to be stable until files are added or removed.
 
         // Skip the entries we tried on the last iteration.
         for (int i = 0; i < status->spool_loc; i += 1) {
             errno = 0;
             if (readdir(dirp) == NULL) {
-                // We've hit the end of the directory; it probably means that we
-                // managed to send some messages on the last iteration.
+                // We've hit the end of the directory; it probably means that the
+                // user has removed files.
                 status->spool_loc = 0;
                 if (errno == 0) {
                     rewinddir(dirp);
@@ -471,24 +474,21 @@ static bool cycle(Conf *conf, Group *groups, Status *status)
                         // read to the start and carry on as if we'd always
                         // intended to start from the beginning of the
                         // directory.
-                        start_spool_loc = status->spool_loc = 0;
+                        start_spool_loc = 0;
                     }
-                    else if (start_spool_loc > status->spool_loc) {
+                    else if (num_successes > 0
+                          || start_spool_loc > status->spool_loc) {
                         // Entries have been removed from the directory during
                         // the cycle (probably because we've sent messages
                         // successfully, but maybe because of user interaction).
-                        // We reset the directory read to the start, in case
-                        // files were present earlier in the readdir that we
-                        // never tried, or new files have been added in the
-                        // interim.
-                        start_spool_loc = status->spool_loc = 0;
+                        // Either way, this is likely to change the order of
+                        // files returned by readdir(), so it's better to try
+                        // everything in the directory again.
+                        start_spool_loc = 0;
                         tried_once = false;
                     }
 
-                    // There could be entries between seekdir(0) and
-                    // seekdir(status->spool_loc) that we haven't yet tried to
-                    // send, so rewind to make sure we have a chance of trying
-                    // then.
+                    status->spool_loc = 0;
                     rewinddir(dirp);
                     continue;
                 }
@@ -577,16 +577,24 @@ next_try:
         }
 
         free(msg_path);
-        if (conf->mode == DAEMON_MODE && !all_sent) {
-            status->spool_loc += 1;
-            break;
-        }
-
         if (conf->mode == DAEMON_MODE) {
-            if (tried_once && start_spool_loc == status->spool_loc) {
-                // We've read all the directory entries at least once.
+            if (!all_sent
+              || (tried_once && start_spool_loc == status->spool_loc)) {
+                // Either a message send has failed or we've got back to the
+                // point in the spool dir where we started.
+                if (num_successes > 0) {
+                    // If one or more messages was sent, then the removal of those
+                    // files from the file system is likely to perturb the order of
+                    // files in readdir(), such that spool_loc is likely to be
+                    // misleading. It's better to start from the beginning of the
+                    // directory next time.
+                    status->spool_loc = 0;
+                } else {
+                    status->spool_loc += 1;
+                }
                 break;
             }
+
             status->spool_loc += 1;
             tried_once = true;
         }
