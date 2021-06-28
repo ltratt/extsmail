@@ -116,7 +116,7 @@ extern char* __progname;
 static void read_externals(void);
 static void free_groups();
 static int try_externals_path(const char *);
-static bool cycle(Conf *, Group *, Status *);
+static int cycle(Conf *, Group *, Status *);
 static bool try_groups(Conf *, Status *, const char *, int);
 static void push_killed_pid(Status *, pid_t);
 static void cycle_killed_pids(Status *);
@@ -376,12 +376,11 @@ static int try_externals_path(const char *path)
 //
 
 //
-// Try sending any messages in the spool dir. Returns true if all messages were
-// sent successfully (or if there were no messages to send), or false if at least
-// one message failed to be succesfully sent.
+// Try sending any messages in the spool dir. Returns the number of messages
+// successfully sent.
 //
 
-static bool cycle(Conf *conf, Group *groups, Status *status)
+static int cycle(Conf *conf, Group *groups, Status *status)
 {
     char *msgs_path; // msgs dir (within spool dir)
     if (asprintf(&msgs_path, "%s%s%s", conf->spool_dir, DIR_SEP, MSGS_DIR)
@@ -632,7 +631,7 @@ next_try:
     if (num_successes > 0)
         do_notify_success_cmd(conf, num_successes);
 
-    return all_sent;
+    return num_successes;
 }
 
 
@@ -1642,9 +1641,9 @@ int main(int argc, char** argv)
 
             // The main message sending cycle
 
-            bool all_sent = cycle(conf, groups, &status);
+            int num_successes = cycle(conf, groups, &status);
 
-            if (!all_sent && conf->notify_failure_interval > 0
+            if (status.any_failure && conf->notify_failure_interval > 0
               && time(NULL) >
               status.last_notify_failure + conf->notify_failure_interval) {
                 do_notify_failure_cmd(conf, &status);
@@ -1661,10 +1660,16 @@ int main(int argc, char** argv)
             // INITIAL_POLL_WAIT to MAX_POLL_WAIT).
 
             int poll_wait;
-            if (all_sent)
-                poll_wait = MAX_POLL_WAIT;
-            else
+            if (status.any_failure) {
+                if (num_successes > 0) {
+                    // Some messages were sent, so it's better not to wait too
+                    // long before trying to send more.
+                    unsuccessful_wait = INITIAL_POLL_WAIT;
+                }
                 poll_wait = unsuccessful_wait;
+            }
+            else
+                poll_wait = MAX_POLL_WAIT;
 
             // On platforms that support an appropriate mechanism (such as kqueue
             // or inotify), we try and send messages as soon as we notice changes
@@ -1700,7 +1705,7 @@ int main(int argc, char** argv)
             sleep(poll_wait);
 #endif
 
-            if (all_sent)
+            if (!status.any_failure)
                 unsuccessful_wait = INITIAL_POLL_WAIT;
             else {
                 unsuccessful_wait *= 2;
