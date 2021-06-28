@@ -93,7 +93,6 @@ typedef struct _pid_llist {
 } PID_LList;
 
 typedef struct {
-    long spool_loc;       // The next entry number in the spool dir to try.
     bool any_failure;     // Set to true if any message in the spool dir was not
                           // sent. Reset on each cycle
     time_t last_success;  // The time of the last successful send of all
@@ -397,45 +396,24 @@ static int cycle(Conf *conf, Group *groups, Status *status)
     }
 
     if (conf->mode == DAEMON_MODE) {
-        // In daemon mode, we try to make sure we don't get "stuck" on the same
-        // message. For example, if a message is too big to be sent by the
-        // remote sendmail, it could stop us trying to send other messages which
-        // might be successful. So, on each cycle, we try starting one entry
-        // further into the spool dir. In other words if we have entries:
-        //   a, b, c
-        // in the spool dir then we will try sending them in this order upon
-        // each cycle (until some are actually sent):
-        //   1: a, b, c
-        //   2: b, c, a
-        //   3: c, a, b
-        // Note that this is only a "best effort": the order that files are
-        // returned by readdir() is undefined, though on most operating systems
-        // it is likely to be stable until files are added or removed.
-
-        // Skip the entries we tried on the last iteration.
-        for (int i = 0; i < status->spool_loc; i += 1) {
-            errno = 0;
-            if (readdir(dirp) == NULL) {
-                // We've hit the end of the directory; it probably means that the
-                // user has removed files.
-                status->spool_loc = 0;
-                if (errno == 0) {
-                    rewinddir(dirp);
-                    break;
-                }
-                else {
-                    // Something odd happened, and it's not obvious what we could
-                    // do to recover. We're best off starting afresh in the next
-                    // cycle.
-                    closedir(dirp);
-                    free(msgs_path);
-                    return false;
-                }
+        if (status->any_failure) {
+            // In daemon mode, we try to make sure we don't get "stuck" on the
+            // same message. For example, if a message is too big to be sent by
+            // the remote sendmail, it can stop us sending other messages. If
+            // in the last cycle we encountered a failure, we randomly skip
+            // some entries in the queue directory on the basis that it might
+            // allow some other messages to be sent.
+            uint32_t num_entries = 0;
+            while (readdir(dirp) != NULL) {
+                num_entries += 1;
+            }
+            rewinddir(dirp);
+            uint32_t skip = arc4random_uniform(num_entries);
+            for (uint32_t i = 0; i < skip; i += 1) {
+                readdir(dirp);
             }
         }
     }
-    long start_spool_loc;
-    start_spool_loc = status->spool_loc;
 
     // Reset all the externals "working" status so that we'll try all of them
     // again.
@@ -451,7 +429,7 @@ static int cycle(Conf *conf, Group *groups, Status *status)
     }
 
     bool all_sent = true;
-    bool tried_once = false; // Make sure we've tried at least one file.
+    bool reached_end = false; // Have we iterated through the directory at least once?
     int num_successes = 0;   // How many messages have been successfully sent.
     while (1) {
         char *msg_path = NULL;
@@ -462,32 +440,11 @@ static int cycle(Conf *conf, Group *groups, Status *status)
             if (errno == 0) {
                 // We've got to the end of the directory.
                 if (conf->mode == DAEMON_MODE) {
-                    if (tried_once && start_spool_loc == 0) {
-                        // We started this cycle from the start of the directory,
-                        // so we can now be sure that we've read everything.
+                    if (reached_end
+                      || (!reached_end && !status->any_failure && num_successes == 0)) {
                         break;
                     }
-                    else if (!tried_once) {
-                        // We haven't read any entries, but we've already read
-                        // past the end of the directory. We reset the directory
-                        // read to the start and carry on as if we'd always
-                        // intended to start from the beginning of the
-                        // directory.
-                        start_spool_loc = 0;
-                    }
-                    else if (num_successes > 0
-                          || start_spool_loc > status->spool_loc) {
-                        // Entries have been removed from the directory during
-                        // the cycle (probably because we've sent messages
-                        // successfully, but maybe because of user interaction).
-                        // Either way, this is likely to change the order of
-                        // files returned by readdir(), so it's better to try
-                        // everything in the directory again.
-                        start_spool_loc = 0;
-                        tried_once = false;
-                    }
-
-                    status->spool_loc = 0;
+                    reached_end = true;
                     rewinddir(dirp);
                     continue;
                 }
@@ -502,7 +459,6 @@ static int cycle(Conf *conf, Group *groups, Status *status)
 
         // The entries "." and ".." are, fairly obviously, not messages.
         if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0) {
-            status->spool_loc += 1;
             continue;
         }
 
@@ -576,27 +532,6 @@ next_try:
         }
 
         free(msg_path);
-        if (conf->mode == DAEMON_MODE) {
-            if (!all_sent
-              || (tried_once && start_spool_loc == status->spool_loc)) {
-                // Either a message send has failed or we've got back to the
-                // point in the spool dir where we started.
-                if (num_successes > 0) {
-                    // If one or more messages was sent, then the removal of those
-                    // files from the file system is likely to perturb the order of
-                    // files in readdir(), such that spool_loc is likely to be
-                    // misleading. It's better to start from the beginning of the
-                    // directory next time.
-                    status->spool_loc = 0;
-                } else {
-                    status->spool_loc += 1;
-                }
-                break;
-            }
-
-            status->spool_loc += 1;
-            tried_once = true;
-        }
     }
 
     closedir(dirp);
@@ -604,7 +539,6 @@ next_try:
 
     if (conf->mode == DAEMON_MODE) {
         if (all_sent) {
-            status->spool_loc = 0;
             status->any_failure = false;
             status->last_success = status->last_notify_failure = time(NULL);
             if (num_successes == 0) {
@@ -1567,7 +1501,6 @@ int main(int argc, char** argv)
         exit(1);
 
     Status status;
-    status.spool_loc = 0;
     status.any_failure = false;
     status.last_success = status.last_notify_failure = time(NULL);
     status.pid_llist = NULL;
