@@ -72,6 +72,11 @@ esac
 
 LDFLAGS="$LDFLAGS -Wl,-z,relro,-z,now"
 
+# arc4random_uniform
+
+AH_TEMPLATE(HAVE_ARC4RANDOM_UNIFORM, [Define if your platform has the arc4random_uniform function.])
+AC_CHECK_FUNC(arc4random_uniform, [AC_DEFINE(HAVE_ARC4RANDOM_UNIFORM)])
+
 # strtonum
 
 AH_TEMPLATE(HAVE_STRTONUM, [Define if your platform has the strtonum function.])
