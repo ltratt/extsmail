@@ -53,6 +53,10 @@
 #include "compat/strtonum.h"
 #endif
 
+#ifdef HAVE_BSD_STDLIB_H
+#include <bsd/stdlib.h>
+#endif
+
 #include "conf.h"
 #include "common.h"
 #include "externals.h"
@@ -408,11 +412,7 @@ static int cycle(Conf *conf, Group *groups, Status *status)
                 num_entries += 1;
             }
             rewinddir(dirp);
-#ifdef HAVE_ARC4RANDOM_UNIFORM
             uint32_t skip = arc4random_uniform(num_entries);
-#else
-            uint32_t skip = ((uint32_t) rand()) % num_entries;
-#endif
             for (uint32_t i = 0; i < skip; i += 1) {
                 readdir(dirp);
             }

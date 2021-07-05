@@ -65,17 +65,19 @@ AC_CHECK_HEADERS(sys/inotify.h, [AC_DEFINE(HAVE_INOTIFY)])
 # fileno (Linux)
 
 case `uname -s` in
-  Linux*|GNU* ) CFLAGS="$CFLAGS -D_POSIX_C_SOURCE=2";;
+  Linux*|GNU* )
+   CFLAGS="$CFLAGS -D_POSIX_C_SOURCE=2"
+   LDFLAGS="$LDFLAGS -lbsd"
+   # arc4random_uniform
+   AH_TEMPLATE(HAVE_BSD_STDLIB_H,
+     [Define if your platform has the <bsd/stdlib.h> header file.])
+   AC_CHECK_HEADERS(bsd/stdlib.h, [AC_DEFINE(HAVE_BSD_STDLIB_H)])
+   ;;
 esac
 
 # set hardening flags
 
 LDFLAGS="$LDFLAGS -Wl,-z,relro,-z,now"
-
-# arc4random_uniform
-
-AH_TEMPLATE(HAVE_ARC4RANDOM_UNIFORM, [Define if your platform has the arc4random_uniform function.])
-AC_CHECK_FUNC(arc4random_uniform, [AC_DEFINE(HAVE_ARC4RANDOM_UNIFORM)])
 
 # strtonum
 
