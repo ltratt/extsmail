@@ -472,69 +472,54 @@ static int cycle(Conf *conf, Group *groups, Status *status)
             exit(1);
         }
 
-        int tries = 3; // Max number of times we'll try to operate on this file.
-        while (1) {
-            int fd = open(msg_path, O_RDONLY);
-            if (fd == -1) {
-                // If we couldn't so much as open the file then something odd
-                // has happened.
-                goto next_try;
-            }
-
-            if (flock(fd, LOCK_EX | LOCK_NB) == -1) {
-                if (errno != EWOULDBLOCK)
-                    syslog(LOG_ERR, "Error when flocking'ing '%s'", msg_path);
-
-                close(fd);
-                goto next_try;
-            }
-
-            // We've now got an exclusive lock on the file.
-            struct stat msg_st;
-            if (fstat(fd, &msg_st) == -1) {
-                syslog(LOG_ERR, "Error when fstat'ing '%s'", msg_path);
-                close(fd);
-                goto next_try;
-            }
-
-            // If the file is zero size it probably means that we managed to
-            // interrupt extsmail before it had managed to obtain an
-            // exclusive lock and write any data to the file. In such a case
-            // we don't try and do anything; instead (below) we sleep a
-            // second and then try again. This is because in general we
-            // assume that extsmail will have finished with a file in at
-            // most a couple of seconds (and probably much less).
-
-            if (msg_st.st_size == 0) {
-                close(fd);
-                goto next_try;
-            }
-
-            if (try_groups(conf, status, msg_path, fd)) {
-                num_successes += 1;
-                break;
-            }
-
-            // The send failed for whatever reason. Give up for the time being.
+        int fd = open(msg_path, O_RDONLY);
+        if (fd == -1) {
+            // If we couldn't so much as open the file then something odd
+            // has happened.
+            free(msg_path);
             all_sent = false;
-            close(fd);
-            break;
-
-next_try:
-            // At this point, either we've released the exclusive lock we'd
-            // previously gained (because we'd gained it before any data had
-            // been written to the spool file) or we weren't able to gain the
-            // lock at all. Assuming we haven't tried this too many times, we now
-            // try sleeping for a second and then having another go.
-
-            tries -= 1;
-            if (tries < 0) {
-                all_sent = false;
-                break;
-            }
-            sleep(1);
+            continue;
         }
 
+        if (flock(fd, LOCK_EX | LOCK_NB) == -1) {
+            if (errno != EWOULDBLOCK)
+                syslog(LOG_ERR, "Error when flocking'ing '%s'", msg_path);
+
+            free(msg_path);
+            close(fd);
+            all_sent = false;
+            continue;
+        }
+
+        // We've now got an exclusive lock on the file.
+        struct stat msg_st;
+        if (fstat(fd, &msg_st) == -1) {
+            syslog(LOG_ERR, "Error when fstat'ing '%s'", msg_path);
+            free(msg_path);
+            close(fd);
+            all_sent = false;
+            continue;
+        }
+
+       if (msg_st.st_size == 0) {
+            // If the file is zero size it either means that we managed to
+            // interrupt extsmail before it had managed to obtain an exclusive
+            // lock and write any data to the file or the user accidentally
+            // created a 0 length file in the spool dir (which is easy to do by
+            // calling "extsmail" instead of "extsmaild"). Because the latter
+            // is a semi-permanent condition, we don't count this as
+            // unsuccessful.
+            free(msg_path);
+            close(fd);
+            continue;
+        }
+
+        if (try_groups(conf, status, msg_path, fd)) {
+            num_successes += 1;
+        } else {
+            all_sent = false;
+            close(fd);
+        }
         free(msg_path);
     }
 
