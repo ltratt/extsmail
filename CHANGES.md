@@ -1,15 +1,11 @@
-============================================================================
-  extsmail history
-============================================================================
-
-  extsmail 2.4 (2020-01-31)
+# extsmail 2.4 (2020-01-31)
 
 * Fix a bug whereby a failure in executing a child process could cause an
   individual mail to be sent more than once and/or an unbounded number of
   child processes to persist indefinitely.
 
 
-  extsmail 2.3 (2019-10-14)
+# extsmail 2.3 (2019-10-14)
 
 * Have autoconf decide whether to use lex/yacc or flex/bison.
 
@@ -24,7 +20,7 @@
 * extsmaild -v now prints extsmail's version number.
 
 
-  extsmail 2.2 (2018-11-30)
+# extsmail 2.2 (2018-11-30)
 
 * Suggest using "-t" with sendmail in examples (some sendmail clones require
   this switch).
@@ -34,12 +30,12 @@
 * Fix two minor compiler warnings.
 
 
-  extsmail 2.1 (2017-11-25)
+# extsmail 2.1 (2017-11-25)
 
 * Build fix for more recent C compilers.
 
 
-  extsmail 2.0 (2014-11-12)
+# extsmail 2.0 (2014-11-12)
 
 * Reload configuration file when SIGHUP is received.
 
@@ -48,14 +44,14 @@
 * Be more careful to free all file handles.
 
 
-  extsmail 1.9 (2014-06-20)
+# extsmail 1.9 (2014-06-20)
 
 * Fix bug which could temporarily cause undue CPU to be consumed when a
   large file send was cut off in the middle. This didn't prevent mail being
   sent correctly in the end, but was ugly.
 
 
-  extsmail 1.8 (2014-05-29)
+# extsmail 1.8 (2014-05-29)
 
 * Fix bug which caused extsmaild to consume larger amounts of CPU than
   strictly necessary (a normal user should now be able to run extsmaild for
@@ -69,7 +65,7 @@
 * Significant code reorganisation to improve readability.
 
 
-  extsmail 1.7 (2014-03-12)
+# extsmail 1.7 (2014-03-12)
 
 * Several minor bug fixes spotted by static analysis tools (including
   memory leaks).
@@ -77,7 +73,7 @@
 * More robust handling of corrupt message files.
 
 
-  extsmail 1.6 (2012-11-17)
+# extsmail 1.6 (2012-11-17)
 
 * Time out stalled sendmail processes. If a sendmail process hasn't read or
   written any data for 60 seconds, it is killed and later retried. This
@@ -86,7 +82,7 @@
   session was open.
 
 
-  extsmail 1.5 (2012-07-09)
+# extsmail 1.5 (2012-07-09)
 
 * Ensure that all messages which can be sent are sent. Some messages may
   temporarily be unsendable (e.g. because of size) and shouldn't hold up
@@ -105,14 +101,14 @@
 * Improvements to batch mode to bring it in line with daemon mode.
 
 
-  extsmail 1.4 (2011-06-18)
+# extsmail 1.4 (2011-06-18)
 
 * Minor bug fixes.
 
 * Documentation fixes.
 
 
-  extsmail 1.3 (2010-05-30)
+# extsmail 1.3 (2010-05-30)
 
 * OS X compile fixes.
 
@@ -121,19 +117,19 @@
 * Recover gracefully from some errors that were previously fatal.
 
 
-  extsmail 1.2 (2009-09-24)
+# extsmail 1.2 (2009-09-24)
 
 * Fix build error when using bison.
 
 * Minor documentation fixes.
 
 
-  extsmail 1.1 (2009-04-29)
+# extsmail 1.1 (2009-04-29)
 
 * Fix two frees of possibly uninitialised pointers.
 
 
-  extsmail 1.0 (2009-01-05)
+# extsmail 1.0 (2009-01-05)
 
 * extsmaild's modes are now specified via the "-m <mode name>" switch. In
   particular the behaviour of the "-d" switch is now obtained with
@@ -149,20 +145,20 @@
 * Correctly handle SIGPIPE.
 
 
-  extsmail 0.3 (2008-12-11)
+# extsmail 0.3 (2008-12-11)
 
 * Make Linux support on a par with BSD (using inotify).
 
 * Minor error handling / reporting changes.
 
 
-  extsmail 0.2 (2008-11-20)
+# extsmail 0.2 (2008-11-20)
 
 * Adds 'timeout' feature to externals.
 
 * Fixes bug where exec'd externals first parameter was not correctly set.
 
 
-  extsmail 0.1 (2008-11-11)
+# extsmail 0.1 (2008-11-11)
 
 * First public release.
