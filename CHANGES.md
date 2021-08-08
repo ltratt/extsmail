@@ -1,3 +1,13 @@
+# extsmail 2.5 (2021-08-08)
+
+* Heavily simplify queue processing. As well as making the code easier to
+  understand, extsmail is now more aggressive in trying to send messages.
+  Failure to send a message now causes the next iteration through the queue to
+  start from a random position, ensuring that extsmail can't become
+  stuck on a (temporary or persistently) unsendable message, no matter the
+  iteration order of the underlying spool directory.
+
+
 # extsmail 2.4 (2020-01-31)
 
 * Fix a bug whereby a failure in executing a child process could cause an
