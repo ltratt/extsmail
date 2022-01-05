@@ -1612,8 +1612,8 @@ int main(int argc, char** argv)
             FD_ZERO(&descriptors);
             FD_SET(fd, &descriptors);
             struct timespec timeout = {poll_wait, 0};
-            if (pselect(fd + 1, &descriptors, NULL, NULL, &timeout, NULL) != -1)
-            {
+            int rtn = pselect(fd + 1, &descriptors, NULL, NULL, &timeout, NULL);
+            if (rtn == 1) {
                 // Even though we don't care what the result of the inotify read
                 // is, we still need to read from it so that the buffer doesn't
                 // fill up.
@@ -1621,6 +1621,8 @@ int main(int argc, char** argv)
                 int res = read(fd, buf, INOTIFY_BUFLEN);
                 if (res == -1)
                     syslog(LOG_ERR, "Error when reading from inotify buffer");
+            } else if (rtn == -1) {
+                syslog(LOG_ERR, "main: pselect: %s", strerror(errno));
             }
 #else
             // If no other support is available, we fall back on polling alone.
