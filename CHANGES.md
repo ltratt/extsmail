@@ -4,7 +4,7 @@
   understand, extsmail is now more aggressive in trying to send messages.
   Failure to send a message now causes the next iteration through the queue to
   start from a random position, ensuring that extsmail can't become
-  stuck on a (temporary or persistently) unsendable message, no matter the
+  stuck on a (temporarily or persistently) unsendable message, no matter the
   iteration order of the underlying spool directory.
 
 
