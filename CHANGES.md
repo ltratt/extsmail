@@ -1,3 +1,9 @@
+# extsmail 2.6 (2022-08-04)
+
+* On Linux, ensure that a pselect() timeout leads to trying to (re)send
+  messages.
+
+
 # extsmail 2.5 (2021-08-08)
 
 * Heavily simplify queue processing. As well as making the code easier to
