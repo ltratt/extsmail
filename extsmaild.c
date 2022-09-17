@@ -1425,7 +1425,7 @@ static void check_externals(const char *file)
 
 static void usage(int rtn_code)
 {
-    fprintf(stderr, "Usage: %s [-hv] [-m <batch|daemon>] [-t <conf>]\n", __progname);
+    fprintf(stderr, "Usage: %s [-c <config-file>] [-hv] [-m <batch|daemon>] [-t]\n", __progname);
     exit(rtn_code);
 }
 
@@ -1445,8 +1445,17 @@ int main(int argc, char** argv)
 
     Mode mode = BATCH_MODE;
     int ch;
-    while ((ch = getopt(argc, argv, "hm:t:v")) != -1) {
+    char *conf_path = NULL;
+    while ((ch = getopt(argc, argv, "c:hm:t:v")) != -1) {
         switch (ch) {
+            case 'c':
+                if (conf_path)
+                    usage(1);
+                conf_path = malloc(strlen(optarg) + 1);
+                if (conf_path == NULL)
+                    errx(1, "main: unable to allocate memory");
+                strcpy(conf_path, optarg);
+                break;
             case 'm':
                 if (strcmp(optarg, "batch") == 0)
                     mode = BATCH_MODE;
@@ -1471,7 +1480,7 @@ int main(int argc, char** argv)
         }
     }
 
-    Conf *conf = read_conf();
+    Conf *conf = read_conf(conf_path);
 
     read_externals();
 
