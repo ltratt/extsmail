@@ -59,10 +59,13 @@ extern FILE *yycin;
 Conf *conf = NULL; // Global variable needed for Yacc. Sigh.
 
 //
-// Read the configuration file.
+// Read the configuration file. If conf_path is non-NULL, the user has
+// specified a path for the configuration file and we don't search for
+// alternatives. If conf_path is NULL, we search through expected locations for
+// the configuration file.
 //
 
-Conf *read_conf()
+Conf *read_conf(char *conf_path)
 {
     conf = malloc(sizeof(Conf));
     if (conf == NULL)
@@ -72,9 +75,21 @@ Conf *read_conf()
     conf->notify_failure_cmd = NULL;
     conf->notify_success_cmd = NULL;
 
+    if (conf_path) {
+        int rtn = try_conf_path(conf_path);
+        if (rtn == 0)
+            return conf;
+
+        err(1, "Can't read configuration file '%s'", conf_path);
+    }
+
     int i;
     for (i = 0; CONF_PATHS[i] != NULL; i += 1) {
-        int rtn = try_conf_path(CONF_PATHS[i]);
+        char *cnd_path = expand_path(CONF_PATHS[i]);
+        if (cnd_path == NULL)
+            continue;
+        int rtn = try_conf_path(cnd_path);
+        free(cnd_path);
         if (rtn == 0)
             break;
         else if (rtn == -1)
@@ -106,13 +121,7 @@ void free_conf(Conf *conf)
 
 static int try_conf_path(const char *path)
 {
-    char *cnd_path = expand_path(path);
-    if (cnd_path == NULL) {
-        return -1;
-    }
-
-    yycin = fopen(cnd_path, "rt");
-    free(cnd_path);
+    yycin = fopen(path, "rt");
     if (yycin == NULL) {
         if (errno == ENOENT)
             return 1;

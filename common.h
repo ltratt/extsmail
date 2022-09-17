@@ -24,7 +24,7 @@
 
 #define VERSION1_ID "v1"
 
-Conf *read_conf();
+Conf *read_conf(char *);
 void free_conf(Conf *);
 bool check_spool_dir(Conf *);
 

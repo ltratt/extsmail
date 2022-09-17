@@ -50,7 +50,7 @@ int main(int argc, char** argv)
         err(EXIT_FAILURE, "pledge");
 #endif
 
-    Conf *conf = read_conf();
+    Conf *conf = read_conf(NULL);
 
     // Check that everything to do with the spool dir is OK.
 
