@@ -116,7 +116,8 @@ typedef struct {
 
 extern char* __progname;
 
-static void read_externals(void);
+static void read_externals(char *);
+char *find_externals_path();
 static void free_groups();
 static int try_externals_path(const char *);
 static int cycle(Conf *, Group *, Status *);
@@ -234,10 +235,23 @@ static void sighup_trap(__attribute__ ((unused)) int sigraised)
 // This function does not return if there is a problem.
 //
 
-static void read_externals(void)
+static void read_externals(char *path)
 {
+    if (path != NULL) {
+        int rtn = try_externals_path(path);
+        if (rtn != 0)
+            err(1, "Couldn't read externals file at '%s'", path);
+    }
+
     for (int i = 0; EXTERNALS_PATHS[i] != NULL; i += 1) {
-        int rtn = try_externals_path(EXTERNALS_PATHS[i]);
+        char *cnd_path = expand_path(path);
+        if (cnd_path == NULL) {
+            free(cnd_path);
+            return;
+        }
+
+        int rtn = try_externals_path(cnd_path);
+        free(cnd_path);
         if (rtn == 0)
             return;
         else if (rtn == -1)
@@ -249,11 +263,31 @@ static void read_externals(void)
 
 
 //
+// Search for an externals file, returning a malloc'd block containing a path
+// if successful.
+//
+// This function does not return if it does not find an externals file.
+//
+
+char *find_externals_path() {
+    for (int i = 0; EXTERNALS_PATHS[i] != NULL; i += 1) {
+        char *cnd_path = expand_path(EXTERNALS_PATHS[i]);
+
+        if (access(cnd_path, F_OK) == 0)
+            return cnd_path;
+
+        free(cnd_path);
+    }
+
+    err(1, "Can't find a valid externals file");
+}
+
+
+//
 // Free groups/matches/externals
 //
 
-static void free_matches(Match *match)
-{
+static void free_matches(Match *match) {
     if (NULL == match)
         return;
 
@@ -327,15 +361,8 @@ extern void yyelex_destroy(void);
 
 static int try_externals_path(const char *path)
 {
-    char *cnd_path = expand_path(path);
-    if (cnd_path == NULL) {
-        free(cnd_path);
-        return -1;
-    }
-
-    yyein = fopen(cnd_path, "rt");
+    yyein = fopen(path, "rt");
     if (yyein == NULL) {
-        free(cnd_path);
         if (errno == ENOENT)
             return 1;
         return -1;
@@ -344,7 +371,6 @@ static int try_externals_path(const char *path)
     // See whether the externals exists at 'path'.
     struct stat externals_st;
     if (fstat(fileno(yyein), &externals_st) == -1) {
-        free(cnd_path);
         return 1;
     }
 
@@ -353,10 +379,8 @@ static int try_externals_path(const char *path)
     if (externals_st.st_uid != geteuid() || externals_st.st_gid != getegid()) {
         warnx("The user and / or group permissions of '%s' do not match the "
           "executing user", path);
-        free(cnd_path);
         return -1;
     }
-    free(cnd_path);
 
     if (yyeparse() != 0) {
         fclose(yyein);
@@ -1425,7 +1449,7 @@ static void check_externals(const char *file)
 
 static void usage(int rtn_code)
 {
-    fprintf(stderr, "Usage: %s [-c <config-file>] [-hv] [-m <batch|daemon>] [-t]\n", __progname);
+    fprintf(stderr, "Usage: %s [-c <config-file>] [-e <externals-file>] [-hv] [-m <batch|daemon>] [-t]\n", __progname);
     exit(rtn_code);
 }
 
@@ -1446,7 +1470,8 @@ int main(int argc, char** argv)
     Mode mode = BATCH_MODE;
     int ch;
     char *conf_path = NULL;
-    while ((ch = getopt(argc, argv, "c:hm:t:v")) != -1) {
+    char *externals_path = NULL;
+    while ((ch = getopt(argc, argv, "c:e:hm:t:v")) != -1) {
         switch (ch) {
             case 'c':
                 if (conf_path)
@@ -1455,6 +1480,14 @@ int main(int argc, char** argv)
                 if (conf_path == NULL)
                     errx(1, "main: unable to allocate memory");
                 strcpy(conf_path, optarg);
+                break;
+            case 'e':
+                if (externals_path)
+                    usage(1);
+                externals_path = malloc(strlen(optarg + 1));
+                if (externals_path == NULL)
+                    errx(1, "main: unable to allocate memory");
+                strcpy(externals_path, optarg);
                 break;
             case 'm':
                 if (strcmp(optarg, "batch") == 0)
@@ -1482,7 +1515,9 @@ int main(int argc, char** argv)
 
     Conf *conf = read_conf(conf_path);
 
-    read_externals();
+    if (externals_path == NULL)
+        externals_path = find_externals_path();
+    read_externals(externals_path);
 
     obtain_lock(conf);
 
@@ -1565,7 +1600,7 @@ int main(int argc, char** argv)
             // Reload the externals file if asked to
             if (reload_config)  {
                 free_groups();
-                read_externals();
+                read_externals(externals_path);
                 syslog(LOG_INFO, "Reloaded externals");
                 reload_config = 0;
             }
@@ -1649,6 +1684,7 @@ int main(int argc, char** argv)
     }
     else {
         conf->mode = BATCH_MODE;
+        free(externals_path);
 
         openlog(__progname, LOG_PERROR, LOG_MAIL);
         setlogmask(LOG_UPTO(LOG_NOTICE));
