@@ -44,6 +44,11 @@ externals_tokenizer.c: externals_tokenizer.l
 	${LEX} -Pyye -oexternals_tokenizer.c externals_tokenizer.l
 
 
+test: all
+	@test @JOT@ || sh -c 'echo "'jot' needed to run test suite" 2>&1 ; exit 1'
+	cd tests && ./run.sh
+
+
 install: all
 	install -d ${DESTDIR}${bindir}
 	install -c -m 555 extsmail ${DESTDIR}${bindir}

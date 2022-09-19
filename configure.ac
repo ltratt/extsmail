@@ -100,6 +100,18 @@ case $flex_version in
         ;;
 esac
 
+
+################################################################################
+# Testing feature checks
+#
+
+ AC_CHECK_PROGS(JOT, jot, false)
+ if test "${JOT}" = "false"; then
+     AC_MSG_WARN([jot not installed: cannot run test suite.])
+     unset JOT
+ fi
+
+
 ################################################################################
 # Output
 #
