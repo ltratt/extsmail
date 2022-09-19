@@ -1217,23 +1217,56 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
             // retry the message send later.
 
             int rtn_status;
-            if (waitpid(pid, &rtn_status, 0) || WIFEXITED(rtn_status)) {
-                int child_rtn = WEXITSTATUS(rtn_status);
-                if (child_rtn != 0) {
-                    if (errmsgbuf_used == 0) {
-                        syslog(LOG_ERR, "%s: Received error %d when executing "
-                          "'%s' on '%s'", cur_ext->name, child_rtn,
-                          cur_ext->sendmail, msg_path);
-                    } else {
-                        syslog(LOG_ERR, "%s: Received error %d when executing "
-                          "'%s' on '%s': %.*s", cur_ext->name, child_rtn,
-                          cur_ext->sendmail, msg_path, (int) errmsgbuf_used, errmsgbuf);
+            time_t timeout = time(NULL) + MAX_POLL_NO_SEND;
+            while (true) {
+                int rtn = waitpid(pid, &rtn_status, WNOHANG);
+                if (rtn > 0) {
+                    if (WIFEXITED(rtn_status)) {
+                        int child_rtn = WEXITSTATUS(rtn_status);
+                        if (child_rtn == 0)
+                            break;
+                        else {
+                            if (errmsgbuf_used == 0) {
+                                syslog(LOG_ERR, "%s: Received error %d when executing "
+                                  "'%s' on '%s'", cur_ext->name, child_rtn,
+                                  cur_ext->sendmail, msg_path);
+                            } else {
+                                syslog(LOG_ERR, "%s: Received error %d when executing "
+                                  "'%s' on '%s': %.*s", cur_ext->name, child_rtn,
+                                  cur_ext->sendmail, msg_path, (int) errmsgbuf_used, errmsgbuf);
+                            }
+                            goto next;
+                        }
+                    } else if (WIFSIGNALED(rtn_status)) {
+                        if (errmsgbuf_used == 0) {
+                            syslog(LOG_ERR, "%s: Received signal %d when executing "
+                              "'%s' on '%s'", cur_ext->name, WTERMSIG(rtn_status),
+                              cur_ext->sendmail, msg_path);
+                        } else {
+                            syslog(LOG_ERR, "%s: Received signal %d when executing "
+                              "'%s' on '%s': %.*s", cur_ext->name, WTERMSIG(rtn_status),
+                              cur_ext->sendmail, msg_path, (int) errmsgbuf_used, errmsgbuf);
+                        }
+                        goto next;
                     }
+                } else if (rtn == -1) {
+                    syslog(LOG_ERR, "%s: waitpid failed when executing "
+                      "'%s' on '%s'", cur_ext->name, cur_ext->sendmail, msg_path);
                     goto next;
                 }
-            }
-            else {
-                goto next;
+                if (time(NULL) > timeout) {
+                    if (errmsgbuf_used == 0) {
+                        syslog(LOG_ERR, "%s: Timeout when executing "
+                          "'%s' on '%s'", cur_ext->name,
+                          cur_ext->sendmail, msg_path);
+                    } else {
+                        syslog(LOG_ERR, "%s: Timeout when executing "
+                          "'%s' on '%s': %.*s", cur_ext->name,
+                          cur_ext->sendmail, msg_path, (int) errmsgbuf_used, errmsgbuf);
+                    }
+                    goto next_with_kill;
+                }
+                sleep(1);
             }
 
             // At this point, we know everything has worked, so we just need
