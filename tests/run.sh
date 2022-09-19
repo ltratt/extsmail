@@ -69,13 +69,29 @@ echo "===> read_all_stall"
 cat << EOF > $t/externals
 group {
     external test {
-        sendmail = "$t/read_all_stall"
+        sendmail = "$t/test_read_all_stall"
     }
 }
 EOF
 chown :`id -g` $t/externals
-cc -Wall -o $t/read_all_stall test_read_all_stall.c
+cc -Wall -o $t/test_read_all_stall test_read_all_stall.c
 ../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep "^extsmaild: test: Timeout when executing"
+
+echo "===> read_all_stall (kill by signal)"
+# The next test is potentially flaky as it relies on timing.
+t2=`mktemp`
+echo $t2
+../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>$t2 &
+pid=$!
+sleep 3
+# For reasons I don't understand, `pkill` on Linux only matches 15 character
+# process names unless `-f` is specified.
+pkill -SIGKILL -P $pid -f test_read_all_stall
+wait $pid || true
+# For reasons I don't understand, Linux can report the wrong signal number as
+# being the cause of the signal's termination.
+grep "extsmaild: test: Received signal 9" $t2
+rm $t2
 
 echo "===> test_too_slow"
 cat << EOF > $t/externals
