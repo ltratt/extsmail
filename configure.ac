@@ -72,6 +72,9 @@ case `uname -s` in
    AH_TEMPLATE(HAVE_BSD_STDLIB_H,
      [Define if your platform has the <bsd/stdlib.h> header file.])
    AC_CHECK_HEADERS(bsd/stdlib.h, [AC_DEFINE(HAVE_BSD_STDLIB_H)])
+   AH_TEMPLATE(HAVE_BSD_STRING_H,
+     [Define if your platform has the <bsd/string.h> header file.])
+   AC_CHECK_HEADERS(bsd/string.h, [AC_DEFINE(HAVE_BSD_STRING_H)])
    ;;
 esac
 
