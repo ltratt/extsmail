@@ -37,7 +37,7 @@ cat << EOF > $t/extsmail.conf
 spool_dir = "$t/spool_dir/"
 EOF
 
-echo "===> test_stderr_write"
+echo -n "test_stderr_write... "
 cat << EOF > $t/externals
 group {
     external test {
@@ -49,11 +49,12 @@ chown :`id -g` $t/externals
 chmod 700 $t/spool_dir
 chmod 700 $t/spool_dir/msgs
 cc -Wall -o $t/test_stderr_write test_stderr_write.c
-../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep "extsmaild.*test$"
+../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep -q "extsmaild.*test$"
 jot 10000 >> $t/spool_dir/msgs/1
-../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep "extsmaild.*test$"
+../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep -q "extsmaild.*test$"
+echo OK
 
-echo "===> test_read_all_fail"
+echo -n "test_read_all_fail... "
 cat << EOF > $t/externals
 group {
     external test {
@@ -63,9 +64,10 @@ group {
 EOF
 chown :`id -g` $t/externals
 cc -Wall -o $t/test_read_all_fail test_read_all_fail.c
-../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep "^extsmaild: test: Received error 1 when executing"
+../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep -q "^extsmaild: test: Received error 1 when executing"
+echo OK
 
-echo "===> read_all_stall"
+echo -n "read_all_stall... "
 cat << EOF > $t/externals
 group {
     external test {
@@ -75,12 +77,12 @@ group {
 EOF
 chown :`id -g` $t/externals
 cc -Wall -o $t/test_read_all_stall test_read_all_stall.c
-../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep "^extsmaild: test: Timeout when executing"
+../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep -q "^extsmaild: test: Timeout when executing"
+echo OK
 
-echo "===> read_all_stall (kill by signal)"
+echo -n "read_all_stall (kill by signal)... "
 # The next test is potentially flaky as it relies on timing.
 t2=`mktemp`
-echo $t2
 ../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>$t2 &
 pid=$!
 sleep 3
@@ -90,10 +92,11 @@ pkill -SIGKILL -P $pid -f test_read_all_stall
 wait $pid || true
 # For reasons I don't understand, Linux can report the wrong signal number as
 # being the cause of the signal's termination.
-grep "extsmaild: test: Received signal 9" $t2
+grep -q "extsmaild: test: Received signal 9" $t2
 rm $t2
+echo OK
 
-echo "===> test_too_slow"
+echo -n "test_too_slow... "
 cat << EOF > $t/externals
 group {
     external test {
@@ -103,9 +106,10 @@ group {
 EOF
 chown :`id -g` $t/externals
 cc -Wall -o $t/test_too_slow test_too_slow.c
-../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep "^extsmaild: test: .*Timeout$"
+../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep -q "^extsmaild: test: .*Timeout$"
+echo OK
 
-echo "===> test_too_slow2"
+echo -n "test_too_slow2... "
 cat << EOF > $t/externals
 group {
     external test {
@@ -115,9 +119,10 @@ group {
 EOF
 chown :`id -g` $t/externals
 cc -Wall -o $t/test_too_slow2 test_too_slow2.c
-../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep "^extsmaild: test: .*Timeout$"
+../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep -q "^extsmaild: test: .*Timeout$"
+echo OK
 
-echo "===> test_slow_read"
+echo -n "test_slow_read... "
 cat << EOF > $t/externals
 group {
     external test {
@@ -128,5 +133,6 @@ EOF
 chown :`id -g` $t/externals
 cc -Wall -o $t/test_slow_read test_slow_read.c
 ../extsmaild -m batch -c $t/extsmail.conf -e $t/externals
+echo OK
 
 rm -rf $t
