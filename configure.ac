@@ -19,7 +19,7 @@
 # IN THE SOFTWARE.
 
 
-AC_INIT([extsmail], [2.6])
+AC_INIT([extsmail], [2.7])
 
 ################################################################################
 # Generic initialization
