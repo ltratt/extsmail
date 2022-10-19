@@ -1,3 +1,18 @@
+# extsmail 2.7 (2022-10-19)
+
+* Introduce a test suite for (unusual) child process failure modes.
+
+* Ensure that all of a child processes's stderr output is read, even if another
+  failure (e.g. the child prematurely closing stdin) occurs beforehand. This
+  makes debugging failing child processes easier.
+
+* Treat child processes killed by a signal as unsuccessful.
+
+* Introduce a timeout for child processes that, after seemingly processing
+  a file correctly (e.g. consuming all input, closing the relevant file
+  descriptors), then stall before exiting.
+
+
 # extsmail 2.6 (2022-08-04)
 
 * On Linux, ensure that a pselect() timeout leads to trying to (re)send
