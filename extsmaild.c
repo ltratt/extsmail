@@ -1002,6 +1002,7 @@ bool write_to_child(int fd, int cstderr_fd, int *cstdin_fd,
             close(cstderr_fd);
             statuses[POLL_CSTDERR] = STATUS_ERR;
         } else {
+            assert(!(statuses[POLL_CSTDERR] & (STATUS_ERR | STATUS_EOF)));
             if (fds[POLL_CSTDERR].revents & POLLIN) {
                 ssize_t nr = read(cstderr_fd, *errmsgbuf + *errmsgbuf_used,
                   stderrbuf_alloc - *errmsgbuf_used);
@@ -1026,9 +1027,11 @@ bool write_to_child(int fd, int cstderr_fd, int *cstdin_fd,
                     *errmsgbuf_used += nr;
                 }
             }
-            if (fds[POLL_CSTDERR].revents & POLLHUP) {
-                // Note that POLLIN and POLLHUP are not mutually exclusive so the
-                // `if` is correct.
+            // POLLIN and POLLHUP are not mutually exclusive, so we might have
+            // got ERR/EOF above: if that happened, we don't want to close the
+            // file descriptor a second time.
+            if ((fds[POLL_CSTDERR].revents & POLLHUP)
+              && !(statuses[POLL_CSTDERR] & (STATUS_ERR | STATUS_EOF))) {
                 close(cstderr_fd);
                 statuses[POLL_CSTDERR] = STATUS_EOF;
             }
