@@ -54,6 +54,20 @@ jot 10000 >> $t/spool_dir/msgs/1
 ../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep -q "extsmaild.*test$"
 echo OK
 
+echo -n "test_stderr_big_write... "
+cat << EOF > $t/externals
+group {
+    external test {
+        sendmail = "$t/test_stderr_big_write"
+    }
+}
+EOF
+chown :`id -g` $t/externals
+cc -Wall -o $t/test_stderr_big_write test_stderr_big_write.c
+sz=$(../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | wc -c)
+test $sz -gt 4096
+echo OK
+
 echo -n "test_read_all_fail... "
 cat << EOF > $t/externals
 group {
