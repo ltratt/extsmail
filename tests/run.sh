@@ -5,7 +5,10 @@ set -euf
 t=`mktemp -d`
 
 mkdir -p $t/spool_dir/msgs
-cat << EOF > $t/spool_dir/msgs/1
+chmod 700 $t/spool_dir
+chmod 700 $t/spool_dir/msgs
+
+cat << EOF > $t/base
 v1
 6
 4
@@ -37,6 +40,35 @@ cat << EOF > $t/extsmail.conf
 spool_dir = "$t/spool_dir/"
 EOF
 
+echo -n "test_normal_small... "
+cat << EOF > $t/externals
+group {
+    external test {
+        sendmail = "$t/test_normal_small"
+    }
+}
+EOF
+chown :`id -g` $t/externals
+cc -Wall -o $t/test_normal_small test_normal_small.c
+cp $t/base $t/spool_dir/msgs/1
+../extsmaild -m batch -c $t/extsmail.conf -e $t/externals
+echo OK
+
+echo -n "test_normal_big... "
+cat << EOF > $t/externals
+group {
+    external test {
+        sendmail = "$t/test_normal_big"
+    }
+}
+EOF
+chown :`id -g` $t/externals
+cc -Wall -o $t/test_normal_big test_normal_big.c
+cp $t/base $t/spool_dir/msgs/1
+jot 1000000 >> $t/spool_dir/msgs/1
+../extsmaild -m batch -c $t/extsmail.conf -e $t/externals
+echo OK
+
 echo -n "test_stderr_write... "
 cat << EOF > $t/externals
 group {
@@ -46,12 +78,25 @@ group {
 }
 EOF
 chown :`id -g` $t/externals
-chmod 700 $t/spool_dir
-chmod 700 $t/spool_dir/msgs
+cp $t/base $t/spool_dir/msgs/1
 cc -Wall -o $t/test_stderr_write test_stderr_write.c
 ../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep -q "extsmaild.*test$"
 jot 10000 >> $t/spool_dir/msgs/1
 ../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep -q "extsmaild.*test$"
+echo OK
+
+echo -n "test_stderr_big_write... "
+cat << EOF > $t/externals
+group {
+    external test {
+        sendmail = "$t/test_stderr_big_write"
+    }
+}
+EOF
+chown :`id -g` $t/externals
+cc -Wall -o $t/test_stderr_big_write test_stderr_big_write.c
+sz=$(../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | wc -c)
+test $sz -gt 4096
 echo OK
 
 echo -n "test_read_all_fail... "

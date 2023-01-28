@@ -793,7 +793,7 @@ err:
 // Returns true on success, false on failure. 'errmsgbuf' will point to a
 // malloc'd area of memory which will contain 'errmsgbuf_used' bytes of error
 // output. This block is allocated whether true or false is returned.
-// `cstdin_fd` will be set -1 if the caller of the child process's stdin is
+// `*cstdin_fd` will be set to >= 0 if the caller of the child process's stdin is
 // not yet closed (i.e. if the caller to the function must close the file
 // descriptor itself).
 //
@@ -839,6 +839,60 @@ bool write_to_child(int fd, int cstderr_fd, int *cstdin_fd,
     time_t last_io_time = time(NULL);
     int rtn;
     while (true) {
+        struct pollfd fds[] = {
+          {-1, 0, 0},
+          {*cstdin_fd, POLLOUT, 0},
+          {cstderr_fd, POLLIN, 0}};
+
+        if (statuses[POLL_FD] == 0 && fdbuf_used == 0) {
+            assert(fdbuf_off == 0);
+            while (true) {
+                ssize_t nr = read(fd, fdbuf, fdbuf_alloc);
+                if (nr == -1) {
+                    if (errno == EAGAIN) {
+                        // If we've tried reading from `fd` and we get EAGAIN
+                        // (which isn't likely to be common, but could be due
+                        // to a slow filesystem), we could end up in a
+                        // situation where the child wants more data but we
+                        // have none to give it, which would cause us to spin
+                        // endlessly on `read`. To avoid that, add `fd` to the
+                        // `poll` call.
+                        fds[POLL_FD].fd = fd;
+                        fds[POLL_FD].events = POLLIN;
+                        break;
+                    }
+                    if (errno != EINTR) {
+                        // If we've got an error reading from fd then we need to
+                        // kill() the child without closing its stdin, so that it
+                        // doesn't think it's successfully read all its input.
+                        // Since this error is (highly unlikely) to be the child's
+                        // fault, there's no point carrying on and trying to read
+                        // the child's stderr.
+                        *errmsgbuf_used = strlcpy(*errmsgbuf,
+                          "Error reading message file", stderrbuf_alloc);
+                        goto err;
+                    }
+                } else {
+                    last_io_time = time(NULL);
+                    if (nr == 0) {
+                        close(fd);
+                        statuses[POLL_FD] = STATUS_EOF;
+                        if (statuses[POLL_CSTDIN] == 0) {
+                            // If we've read everything from fd and the child's
+                            // stdin is still accepting input, then we can now
+                            // safely close the child's stdin.
+                            close(*cstdin_fd);
+                            statuses[POLL_CSTDIN] = STATUS_EOF;
+                            *cstdin_fd = -1;
+                        }
+                    } else {
+                        fdbuf_used = nr;
+                    }
+                    break;
+                }
+            }
+        }
+
         // Are all files successfully closed?
         if ( (statuses[POLL_FD] & STATUS_EOF)
           && (statuses[POLL_CSTDIN] & STATUS_EOF)
@@ -850,52 +904,14 @@ bool write_to_child(int fd, int cstderr_fd, int *cstdin_fd,
             goto cleanup;
         }
 
-        // Is at least one file in an error state and the other files are
-        // closed?
-        if ( (statuses[POLL_FD] & (STATUS_EOF|STATUS_ERR))
-          && (statuses[POLL_CSTDIN] & (STATUS_EOF|STATUS_ERR))
+        // If stdin/stderr are in an error state or closed then, irrespective
+        // of fd's state, we've hit an error. Note that we *must* have tried
+        // reading from fd above, because that could determine whether we treat
+        // the error in this `if` as one caused by fd (in which case we'll
+        // `kill` the child) or not.
+        if ( (statuses[POLL_CSTDIN] & (STATUS_EOF|STATUS_ERR))
           && (statuses[POLL_CSTDERR] & (STATUS_EOF|STATUS_ERR))) {
             goto err;
-        }
-
-        // Do we want to write to the child but it has closed its STDIN and
-        // STDERR? Note that we need to wait until we have fully read its
-        // stderr output.
-        if (  fdbuf_used > 0
-          && (statuses[POLL_CSTDIN] & (STATUS_EOF|STATUS_ERR))
-          && (statuses[POLL_CSTDERR] & (STATUS_EOF|STATUS_ERR))) {
-            if (!(statuses[POLL_FD] & (STATUS_EOF|STATUS_ERR))) {
-                statuses[POLL_FD] = STATUS_EOF;
-                close(fd);
-            }
-            goto err;
-        }
-
-        if (fdbuf_used == 0 && (statuses[POLL_FD] & STATUS_EOF)) {
-            // We've fully written out fd. If the child's stdin hasn't been
-            // closed, we can now close it. If we don't do this explicitly,
-            // some child processes will hang, waiting for more input to be
-            // received.
-            if (!(statuses[POLL_CSTDIN] & (STATUS_EOF|STATUS_ERR))) {
-                close(*cstdin_fd);
-                *cstdin_fd = -1;
-                statuses[POLL_CSTDIN] = STATUS_EOF;
-            }
-        }
-
-        struct pollfd fds[] = {
-          {fd, POLLIN, 0},
-          {*cstdin_fd, POLLOUT, 0},
-          {cstderr_fd, POLLIN, 0}};
-
-        assert(!(statuses[POLL_FD] & STATUS_ERR));
-        if (statuses[POLL_FD] & STATUS_EOF) {
-            // If fd can't produce further input there's no point polling it.
-            fds[POLL_FD].fd = -1;
-        } else if (fdbuf_used > 0) {
-            // We've still got stuff to write out from fdbuf, but we'd still
-            // like to check whether it has closed or has suffered an error.
-            fds[POLL_FD].events = 0;
         }
 
         if (statuses[POLL_CSTDIN] & (STATUS_EOF|STATUS_ERR)) {
@@ -903,8 +919,9 @@ bool write_to_child(int fd, int cstderr_fd, int *cstdin_fd,
             // point polling it.
             fds[POLL_CSTDIN].fd = -1;
         } else if (fdbuf_used == 0) {
-            // There's nothing to write to the child's stdin, but we'd still
-            // like to check whether it is closed or has suffered an error.
+            // There's nothing to write to the child's stdin at the moment, but
+            // we'd still like to check whether it is closed or has suffered an
+            // error.
             fds[POLL_CSTDIN].events = 0;
         }
 
@@ -926,74 +943,33 @@ bool write_to_child(int fd, int cstderr_fd, int *cstdin_fd,
             goto err;
         }
 
-        // First, try reading from POLL_FD. If any branch fails, `fds[POLL_FD]`
-        // will be set to `STATUS_ERR`.
-        if (fds[POLL_FD].revents & (POLLERR|POLLNVAL)) {
-            statuses[POLL_FD] = STATUS_ERR;
-        } else if (fds[POLL_FD].revents & POLLIN) {
-            assert(fdbuf_used == 0);
-            ssize_t nr = read(fd, fdbuf, fdbuf_alloc);
-            if ((nr == -1) && !(errno == EAGAIN || errno == EINTR)) {
-                // Something unrecoverable has happened to `fd`.
-                statuses[POLL_FD] = STATUS_ERR;
-            } else {
-                last_io_time = time(NULL);
-                if (nr == 0) {
-                    close(fd);
-                    statuses[POLL_FD] = STATUS_EOF;
-                } else {
-                    fdbuf_off = 0;
-                    fdbuf_used = nr;
-                }
-            }
-        } else if (fds[POLL_FD].revents & POLLHUP) {
-            // It's unlikely that fd can be disconnected without POLLIN being
-            // true and read() returning zero, but there's nothing to say this
-            // can't happen. Note that POLLIN and POLLHUP are not mutually
-            // exclusive, so we deliberately only check POLLHUP if POLLIN is
-            // not set.
-            close(fd);
-            statuses[POLL_FD] = STATUS_EOF;
-        }
-
-        if (statuses[POLL_FD] & STATUS_ERR) {
-            // If we've got an error reading from fd then we need to kill() the
-            // child without closing its stdin, so that it doesn't think it's
-            // successfully read all its input. Since this error is (highly
-            // unlikely) to be the child's fault, there's no point carrying on
-            // and trying to read the child's stderr.
-            *errmsgbuf_used = strlcpy(*errmsgbuf,
-              "Error reading message file", stderrbuf_alloc);
-            goto err;
-        }
-
         // Write data to the child process (if appropriate).
-        if (fds[POLL_CSTDIN].revents & (POLLERR|POLLNVAL)) {
+        assert(!(fds[POLL_CSTDIN].revents & POLLNVAL));
+        if (fds[POLL_CSTDIN].revents & POLLERR) {
             statuses[POLL_CSTDIN] = STATUS_ERR;
         } else {
             if (fds[POLL_CSTDIN].revents & POLLOUT) {
-                while (fdbuf_off < fdbuf_used) {
-                    ssize_t tnw = write(*cstdin_fd, fdbuf + fdbuf_off, fdbuf_used - fdbuf_off);
-                    if (tnw == -1) {
-                        if (!(errno == EAGAIN || errno == EINTR)) {
-                            statuses[POLL_CSTDIN] = STATUS_ERR;
-                        }
-                        break;
-                    } else {
-                        last_io_time = time(NULL);
-                        fdbuf_off += tnw;
-                        assert(fdbuf_off <= fdbuf_used);
-                        if (fdbuf_off == fdbuf_used) {
-                            fdbuf_off = fdbuf_used = 0;
-                        }
+                ssize_t tnw = write(*cstdin_fd, fdbuf + fdbuf_off, fdbuf_used - fdbuf_off);
+                if (tnw == -1) {
+                    if (!(errno == EAGAIN || errno == EINTR)) {
+                        close(*cstdin_fd);
+                        statuses[POLL_CSTDIN] = STATUS_ERR;
+                        *cstdin_fd = -1;
+                    }
+                } else {
+                    last_io_time = time(NULL);
+                    fdbuf_off += tnw;
+                    assert(fdbuf_off <= fdbuf_used);
+                    if (fdbuf_off == fdbuf_used) {
+                        fdbuf_off = fdbuf_used = 0;
                     }
                 }
             } else if (fds[POLL_CSTDIN].revents & POLLHUP) {
                 // POSiX specifies that POLLOUT and POLLHUP are mutually exclusive
                 // so the `else if` is correct.
                 close(*cstdin_fd);
-                *cstdin_fd = -1;
                 statuses[POLL_CSTDIN] = STATUS_EOF;
+                *cstdin_fd = -1;
             }
         }
 
@@ -1003,32 +979,40 @@ bool write_to_child(int fd, int cstderr_fd, int *cstdin_fd,
             statuses[POLL_CSTDERR] = STATUS_ERR;
         } else {
             if (fds[POLL_CSTDERR].revents & POLLIN) {
-                ssize_t nr = read(cstderr_fd, *errmsgbuf + *errmsgbuf_used,
-                  stderrbuf_alloc - *errmsgbuf_used);
-                if (nr == -1) {
-                    if (!(errno == EAGAIN || errno == EINTR)) {
-                        close(cstderr_fd);
-                        statuses[POLL_CSTDERR] = STATUS_ERR;
-                    }
-                } else {
-                    last_io_time = time(NULL);
-                    if (nr == 0) {
-                        close(cstderr_fd);
-                        statuses[POLL_CSTDERR] = STATUS_EOF;
-                    } else if (nr == stderrbuf_alloc - *errmsgbuf_used) {
-                        stderrbuf_alloc += STDERR_BUF_ALLOC;
-                        *errmsgbuf = realloc(*errmsgbuf, stderrbuf_alloc);
-                        if (*errmsgbuf == NULL) {
-                            syslog(LOG_CRIT, "write_to_child: realloc: %s", strerror (errno));
-                            exit(1);
+                while (true) {
+                    ssize_t nr = read(cstderr_fd, *errmsgbuf + *errmsgbuf_used,
+                      stderrbuf_alloc - *errmsgbuf_used);
+                    if (nr == -1) {
+                        if (errno == EAGAIN)
+                            break;
+                        if (errno != EINTR) {
+                            close(cstderr_fd);
+                            statuses[POLL_CSTDERR] = STATUS_ERR;
+                            break;
                         }
+                    } else {
+                        last_io_time = time(NULL);
+                        if (nr == 0) {
+                            close(cstderr_fd);
+                            statuses[POLL_CSTDERR] = STATUS_EOF;
+                            break;
+                        } else if (nr == stderrbuf_alloc - *errmsgbuf_used) {
+                            stderrbuf_alloc += STDERR_BUF_ALLOC;
+                            *errmsgbuf = realloc(*errmsgbuf, stderrbuf_alloc);
+                            if (*errmsgbuf == NULL) {
+                                syslog(LOG_CRIT, "write_to_child: realloc: %s", strerror (errno));
+                                exit(1);
+                            }
+                        }
+                        *errmsgbuf_used += nr;
                     }
-                    *errmsgbuf_used += nr;
                 }
             }
-            if (fds[POLL_CSTDERR].revents & POLLHUP) {
-                // Note that POLLIN and POLLHUP are not mutually exclusive so the
-                // `if` is correct.
+            // POLLIN and POLLHUP are not mutually exclusive, so we might have
+            // got ERR/EOF above: if that happened, we don't want to close the
+            // file descriptor a second time.
+            if ((fds[POLL_CSTDERR].revents & POLLHUP)
+              && !(statuses[POLL_CSTDERR] & (STATUS_ERR | STATUS_EOF))) {
                 close(cstderr_fd);
                 statuses[POLL_CSTDERR] = STATUS_EOF;
             }
