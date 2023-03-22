@@ -1,3 +1,10 @@
+# extsmail 2.8 (2023-03-22)
+
+* Fix bug where a child's stderr could be only partly read.
+
+* Fix bug where stderr could be closed twice.
+
+
 # extsmail 2.7 (2022-10-19)
 
 * Introduce a test suite for (unusual) child process failure modes.
