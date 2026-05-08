@@ -205,7 +205,7 @@ static bool check_dir(const char *path)
 
     // 'path' must have owner only having rwx access.
 
-    if ((sd_st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXG))
+    if ((sd_st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))
       != (S_IRUSR | S_IWUSR | S_IXUSR)) {
         warnx("%s: Incorrect permissions (should be %.o)", path,
           S_IRUSR | S_IWUSR | S_IXUSR);
