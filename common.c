@@ -242,10 +242,8 @@ char *fdrdline(int fd)
         if (nr == 0)
             break;
         else if (nr == -1) {
-            if (line != NULL) {
-                free(line);
-                return NULL;
-            }
+            free(line);
+            return NULL;
         }
 
         off_t i;
