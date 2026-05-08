@@ -57,6 +57,8 @@ char *mk_str(char *);
         size_t len = 128;
         size_t i = 0;
         char *buf = malloc(len);
+        if (buf == NULL)
+            errx(1, "Out of memory");
         int c;
         while ((c = input()) != 0) {
             if (c == '"') {

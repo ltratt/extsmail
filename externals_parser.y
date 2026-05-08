@@ -91,6 +91,8 @@ groups : group groups
 group : TGROUP TLCB matches externals TRCB
         {
             Group *group = malloc(sizeof(Group));
+            if (group == NULL)
+                errx(1, "Unable to allocate memory");
             group->matches = $<match>3;
             group->externals = $<external>4;
             group->next = NULL;
@@ -100,6 +102,8 @@ group : TGROUP TLCB matches externals TRCB
     | TGROUP TLCB externals TRCB
         {
             Group *group = malloc(sizeof(Group));
+            if (group == NULL)
+                errx(1, "Unable to allocate memory");
             group->matches = NULL;
             group->externals = $<external>3;
             group->next = NULL;
@@ -156,6 +160,8 @@ externals : external externals
 external : TEXTERNAL TID
         {
             _wk_external = malloc(sizeof(External));
+            if (_wk_external == NULL)
+                errx(1, "Unable to allocate memory");
             _wk_external->name = (char *)$<str>2;
             _wk_external->sendmail = NULL;
             _wk_external->last_success = 0;
@@ -235,6 +241,8 @@ defn  : TID TASSIGN TSTRING
                             i += 1;
                     }
                     char *arg = malloc(i - start + 1);
+                    if (arg == NULL)
+                        errx(1, "Unable to allocate memory");
                     memcpy(arg, $<str>3 + start, i - start);
                     arg[i - start] = 0;
                     
@@ -286,6 +294,8 @@ defn  : TID TASSIGN TSTRING
 Match *add_match(Match_Type type, const char *ptn)
 {
     Match *m = malloc(sizeof(Match));
+    if (m == NULL)
+        errx(1, "Out of memory");
     m->regex = (char *)ptn;
     m->type = type;
     int rtn = regcomp(&m->preg, ptn,
