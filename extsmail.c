@@ -105,7 +105,7 @@ int main(int argc, char** argv)
     SPOOL_WRITE("%d\n", argc - 1);
 
     for (int i = 1; i < argc; i += 1)
-        SPOOL_WRITE("%zd\n%s\n", strlen(argv[i]), argv[i]);
+        SPOOL_WRITE("%zu\n%s\n", strlen(argv[i]), argv[i]);
 
 #   define BUF_SIZE 1024
 
