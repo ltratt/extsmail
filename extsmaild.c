@@ -249,7 +249,7 @@ static void read_externals(char *path)
     }
 
     for (int i = 0; EXTERNALS_PATHS[i] != NULL; i += 1) {
-        char *cnd_path = expand_path(path);
+        char *cnd_path = expand_path(EXTERNALS_PATHS[i]);
         if (cnd_path == NULL) {
             free(cnd_path);
             return;
