@@ -1560,7 +1560,7 @@ int main(int argc, char** argv)
             case 'e':
                 if (externals_path)
                     usage(1);
-                externals_path = malloc(strlen(optarg + 1));
+                externals_path = malloc(strlen(optarg) + 1);
                 if (externals_path == NULL)
                     errx(1, "main: unable to allocate memory");
                 strcpy(externals_path, optarg);
