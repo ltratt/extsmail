@@ -245,6 +245,7 @@ static void read_externals(char *path)
         int rtn = try_externals_path(path);
         if (rtn != 0)
             err(1, "Couldn't read externals file at '%s'", path);
+        return;
     }
 
     for (int i = 0; EXTERNALS_PATHS[i] != NULL; i += 1) {
