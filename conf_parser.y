@@ -115,7 +115,7 @@ void yycerror(const char *s)
 
 
 
-int yycwrap()
+int yycwrap(void)
 {
     return 1;
 }

@@ -325,7 +325,7 @@ void yyeerror(const char *s)
 
 
 
-int yyewrap()
+int yyewrap(void)
 {
     return 1;
 }
