@@ -121,8 +121,8 @@ typedef struct {
 extern char* __progname;
 
 static void read_externals(char *);
-char *find_externals_path();
-static void free_groups();
+char *find_externals_path(void);
+static void free_groups(void);
 static int try_externals_path(const char *);
 static int cycle(Conf *, Group *, Status *);
 static bool try_groups(Conf *, Status *, const char *, int);
@@ -142,7 +142,7 @@ static bool set_nonblock(int);
 static char *lock_path;
 static int lock_fd;
 
-static void lock_exit();
+static void lock_exit(void);
 static void sigterm_trap(int);
 static void sighup_trap(int);
 static volatile sig_atomic_t reload_config = 0;
@@ -196,7 +196,7 @@ extern FILE *yyein;
 // This should be kept as simple as possible.
 //
 
-static void lock_exit()
+static void lock_exit(void)
 {
     unlink(lock_path);
     free(lock_path);
@@ -274,7 +274,7 @@ static void read_externals(char *path)
 // This function does not return if it does not find an externals file.
 //
 
-char *find_externals_path() {
+char *find_externals_path(void) {
     for (int i = 0; EXTERNALS_PATHS[i] != NULL; i += 1) {
         char *cnd_path = expand_path(EXTERNALS_PATHS[i]);
 
@@ -340,7 +340,7 @@ static void free_externals(External *external)
 }
 
 
-static void free_groups()
+static void free_groups(void)
 {
     if (groups == NULL)
         return;
@@ -1536,7 +1536,7 @@ static void usage(int rtn_code)
 }
 
 
-static void version()
+static void version(void)
 {
   puts(PACKAGE_NAME " " PACKAGE_VERSION);
 }
