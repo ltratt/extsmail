@@ -934,14 +934,16 @@ bool write_to_child(int fd, int cstderr_fd, int *cstdin_fd,
 
         time_t tout = (MAX_POLL_NO_SEND - (time(NULL) - last_io_time)) * 1000;
         if (tout <= 0) {
-            *errmsgbuf_used = strlcpy(*errmsgbuf, "Timeout", stderrbuf_alloc);
-            goto err;
+            goto timeout;
         }
 
-        if (poll(fds, 3, tout) == -1) {
+        int poll_rtn = poll(fds, 3, tout);
+        if (poll_rtn == -1) {
             if (errno == EINTR)
                 continue;
             goto err;
+        } else if (poll_rtn == 0) {
+            goto timeout;
         }
 
         // Write data to the child process (if appropriate).
@@ -1019,6 +1021,9 @@ bool write_to_child(int fd, int cstderr_fd, int *cstdin_fd,
             }
         }
     }
+
+timeout:
+    *errmsgbuf_used = strlcpy(*errmsgbuf, "Timeout", stderrbuf_alloc);
 
 err:
     // stderr messages sometimes have random newline chars at the end of line - this loop
