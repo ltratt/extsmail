@@ -19,23 +19,22 @@
 # IN THE SOFTWARE.
 
 
+AC_PREREQ([2.61])
 AC_INIT([extsmail], [2.8])
 
 ################################################################################
 # Generic initialization
 #
 
-AC_CONFIG_HEADER(Config.h)
-
 AC_LANG(C)
 
+AC_CONFIG_HEADERS([Config.h])
+AC_USE_SYSTEM_EXTENSIONS
+
 AC_PROG_CC
-AC_PROG_LEX
+AC_PROG_LEX([noyywrap])
 AC_PROG_SED
 AC_PROG_YACC
-AC_ISC_POSIX
-AC_PROG_GCC_TRADITIONAL
-AC_GNU_SOURCE
 
 
 ###############################################################################
