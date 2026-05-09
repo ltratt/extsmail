@@ -36,7 +36,7 @@ char *mk_str(char *);
 %}
 
 
-%option nounput
+%option noyywrap nounput
 
 
 %%
