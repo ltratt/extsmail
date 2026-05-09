@@ -322,10 +322,3 @@ void yyeerror(const char *s)
 {
     warnx("%s", s);
 }
-
-
-
-int yyewrap(void)
-{
-    return 1;
-}

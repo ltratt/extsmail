@@ -115,13 +115,6 @@ void yycerror(const char *s)
 
 
 
-int yycwrap(void)
-{
-    return 1;
-}
-
-
-
 void warn_var(const char *id)
 {
     if (strcmp(id, "spool_dir") == 0
