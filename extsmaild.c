@@ -547,7 +547,6 @@ static int cycle(Conf *conf, Group *groups, Status *status)
             num_successes += 1;
         } else {
             all_sent = false;
-            close(fd);
         }
         free(msg_path);
     }
@@ -823,7 +822,10 @@ bool write_to_child(int fd, int cstderr_fd, int *cstdin_fd,
 #   define POLL_CSTDIN 1
 #   define POLL_CSTDERR 2
 
-    // Has this file reached EOF and thus been closed?
+    // Has this file reached EOF? For `cstdin_fd` and `cstderr_fd` this also
+    // means that the relevant file descriptor has been closed; in contrast,
+    // `fd` is not closed when it is at `STATUS_EOF` as later failures may mean
+    // we need to retain that file descriptor.
 #   define STATUS_EOF 1
     // Has this file hit an error and thus been closed? Note that EOF and ERR
     // are mutually exclusive.
@@ -876,7 +878,6 @@ bool write_to_child(int fd, int cstderr_fd, int *cstdin_fd,
                 } else {
                     last_io_time = time(NULL);
                     if (nr == 0) {
-                        close(fd);
                         statuses[POLL_FD] = STATUS_EOF;
                         if (statuses[POLL_CSTDIN] == 0) {
                             // If we've read everything from fd and the child's
@@ -1038,8 +1039,6 @@ err:
 
 cleanup:
     free(fdbuf);
-    if (!(statuses[POLL_FD] & (STATUS_EOF|STATUS_ERR)))
-        close(fd);
     if (!(statuses[POLL_CSTDERR] & (STATUS_EOF|STATUS_ERR)))
         close(cstderr_fd);
 
@@ -1071,10 +1070,6 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
     Group *group = find_group(msg_path, fd);
     if (group == NULL) {
         syslog(LOG_ERR, "No matching group found for '%s'", msg_path);
-        goto fail;
-    }
-    if (lseek(fd, mf_body_off, SEEK_SET) == -1) {
-        syslog(LOG_ERR, "Error when lseek'ing from '%s': %s", msg_path, strerror (errno));
         goto fail;
     }
 
@@ -1124,6 +1119,11 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
         // executing the sendmail command. We then pipe the message into the
         // sendmail process, and pipe stderr out from the child (so that we can
         // report errors to the user).
+
+       if (lseek(fd, mf_body_off, SEEK_SET) == -1) {
+           syslog(LOG_ERR, "Error when lseek'ing from '%s': %s", msg_path, strerror (errno));
+           goto fail;
+       }
 
         int pipeto[2], pipefrom[2];
         if (pipe(pipeto) == -1) {
@@ -1265,6 +1265,7 @@ static bool try_groups(Conf *conf, Status *status, const char *msg_path, int fd)
             // At this point, we know everything has worked, so we just need
             // to cleanup.
 
+            close(fd);
             for (int j = 0; j < nargv; j += 1)
                 free(argv[j]);
             free(argv);
@@ -1307,6 +1308,7 @@ next:
     }
 
 fail:
+    close(fd);
     for (int j = 0; j < nargv; j += 1)
         free(argv[j]);
     free(argv);

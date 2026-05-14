@@ -85,6 +85,23 @@ jot 10000 >> $t/spool_dir/msgs/1
 ../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep -q "extsmaild.*test$"
 echo OK
 
+echo -n "test_stderr_write_fallback... "
+cat << EOF > $t/externals
+group {
+    external fail {
+        sendmail = "$t/test_stderr_write"
+    }
+    external success {
+        sendmail = "$t/test_normal_small"
+    }
+}
+EOF
+chown :`id -g` $t/externals
+cp $t/base $t/spool_dir/msgs/1
+../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>/dev/null
+test ! -e $t/spool_dir/msgs/1
+echo OK
+
 echo -n "test_stderr_big_write... "
 cat << EOF > $t/externals
 group {
@@ -94,6 +111,7 @@ group {
 }
 EOF
 chown :`id -g` $t/externals
+cp $t/base $t/spool_dir/msgs/1
 cc -Wall -o $t/test_stderr_big_write test_stderr_big_write.c
 sz=$(../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | wc -c)
 test $sz -gt 4096
@@ -112,6 +130,23 @@ cc -Wall -o $t/test_read_all_fail test_read_all_fail.c
 ../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep -q "^extsmaild: test: Received error 1 when executing"
 echo OK
 
+echo -n "test_read_all_fail_fallback... "
+cat << EOF > $t/externals
+group {
+    external fail {
+        sendmail = "$t/test_read_all_fail"
+    }
+    external success {
+        sendmail = "$t/test_normal_small"
+    }
+}
+EOF
+chown :`id -g` $t/externals
+cp $t/base $t/spool_dir/msgs/1
+../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>/dev/null
+test ! -e $t/spool_dir/msgs/1
+echo OK
+
 echo -n "read_all_stall... "
 cat << EOF > $t/externals
 group {
@@ -121,6 +156,7 @@ group {
 }
 EOF
 chown :`id -g` $t/externals
+cp $t/base $t/spool_dir/msgs/1
 cc -Wall -o $t/test_read_all_stall test_read_all_stall.c
 ../extsmaild -m batch -c $t/extsmail.conf -e $t/externals 2>&1 | grep -q "^extsmaild: test: Timeout when executing"
 echo OK
