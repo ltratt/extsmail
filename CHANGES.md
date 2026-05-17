@@ -1,3 +1,16 @@
+# extsmail 2.9 (2026-05-17)
+
+* Ensure that fallbacks in `external`s are always tried correctly.
+
+* Deal correctly with `poll` returning due to a timeout.
+
+* Fix permissions checks for the spool dir.
+
+* Fix memory leak when a line cannot be read.
+
+* Fix bugs in the handling of `extsmaild -e`.
+
+
 # extsmail 2.8 (2023-03-22)
 
 * Fix bug where a child's stderr could be only partly read.
