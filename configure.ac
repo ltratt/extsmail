@@ -20,7 +20,7 @@
 
 
 AC_PREREQ([2.61])
-AC_INIT([extsmail], [2.8])
+AC_INIT([extsmail], [2.9])
 
 ################################################################################
 # Generic initialization

@@ -76,7 +76,10 @@ distclean: clean
 
 distrib:
 	${MAKE} distclean
-	${MAKE} -f Makefile.bootstrap
+	autoconf
+	autoheader
 	@read v?'extsmail version: '; mkdir extsmail-$$v; \
-      cp -r `ls | grep -E -v "(autom4te.cache)|(Makefile.bootstrap)|(extsmail-$$v)"` extsmail-$$v; \
-      tar cfz extsmail-$$v.tar.gz extsmail-$$v; rm -rf extsmail-$$v
+	    git archive HEAD | tar -xf - -C extsmail-$$v; \
+	    rm -rf extsmail-$$v/.gitignore extsmail-$$v/.github/ extsmail-$$v/Makefile.bootstrap; \
+	    cp -p configure Config.h.in extsmail-$$v/; \
+	    tar cfz extsmail-$$v.tar.gz extsmail-$$v; rm -rf extsmail-$$v
